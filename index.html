@@ -446,10 +446,10 @@ const SP={
  'Fes':{l:'Fe',sol:1,c:[72,74,78]},'Mgs':{l:'Mg',sol:1,c:[196,200,206]},'Als':{l:'Al',sol:1,c:[206,210,216]},
  'CaCO3s':{l:'CaCO₃',sol:1,c:[228,225,218]},'Zns':{l:'Zn',sol:1,c:[150,156,162]},'Cus':{l:'Cu',sol:1,c:[198,110,62]},
  'Nas':{l:'Na',sol:1,c:[214,214,206]},'Ks':{l:'K',sol:1,c:[206,204,212]},'Lis':{l:'Li',sol:1,c:[196,198,202]},'Cas':{l:'Ca',sol:1,c:[226,224,214]},'Bas':{l:'Ba',sol:1,c:[212,212,204]},'Rbs':{l:'Rb',sol:1,c:[216,214,206]},'Css':{l:'Cs',sol:1,c:[226,205,140]},'RbO2':{l:'RbO₂',sol:1,c:[226,170,80]},'CsO2':{l:'CsO₂',sol:1,c:[230,160,60]},
- 'Na2O2':{l:'Na₂O₂',sol:1,c:[240,226,160]},'KO2':{l:'KO₂',sol:1,c:[236,190,92]},'Li2O':{l:'Li₂O',sol:1,c:[246,246,244]},'BaO':{l:'BaO',sol:1,c:[244,244,240]},'Fe3O4':{l:'Fe₃O₄',sol:1,c:[44,42,40]},'Ss':{l:'S',sol:1,c:[236,212,60]},'MgS':{l:'MgS',sol:1,c:[236,232,214]},'Al2S3':{l:'Al₂S₃',sol:1,c:[226,220,190]},'Cu2S':{l:'Cu₂S',p:1,c:[30,30,32]}
+ 'Na2O2':{l:'Na₂O₂',sol:1,c:[240,226,160]},'KO2':{l:'KO₂',sol:1,c:[236,190,92]},'Li2O':{l:'Li₂O',sol:1,c:[246,246,244]},'BaO':{l:'BaO',sol:1,c:[244,244,240]},'Fe3O4':{l:'Fe₃O₄',sol:1,c:[44,42,40]},'Ss':{l:'S',sol:1,c:[236,212,60]},'Prs':{l:'P',sol:1,c:[168,52,40]},'Pws':{l:'P₄',sol:1,c:[240,232,196]},'P2O5':{l:'P₂O₅',sol:1,c:[250,250,248]},'Mg3P2':{l:'Mg₃P₂',sol:1,c:[196,184,140]},'Ca3P2':{l:'Ca₃P₂',sol:1,c:[176,150,110]},'MgS':{l:'MgS',sol:1,c:[236,232,214]},'Al2S3':{l:'Al₂S₃',sol:1,c:[226,220,190]},'Cu2S':{l:'Cu₂S',p:1,c:[30,30,32]}
 };
 function lab(k){return (SP[k]&&SP[k].l)||k;}
-const GASL={CO2:'CO₂',NH3:'NH₃',H2S:'H₂S',SO2:'SO₂',Cl2:'Cl₂',H2:'H₂',NO2:'NO₂',O2:'O₂',N2:'N₂',N2O:'N₂O',HCl:'HCl',AcOH:'CH₃COOH',I2:'I₂'};
+const GASL={PH3:'PH₃',CO2:'CO₂',NH3:'NH₃',H2S:'H₂S',SO2:'SO₂',Cl2:'Cl₂',H2:'H₂',NO2:'NO₂',O2:'O₂',N2:'N₂',N2O:'N₂O',HCl:'HCl',AcOH:'CH₃COOH',I2:'I₂'};
 const GASC={NO2:[150,74,24],Cl2:[190,212,92],I2:[150,70,190],HCl:[236,236,236]};
 const GASAQ={CO2:{CO2aq:1},NH3:{NH3aq:1},H2S:{H2Saq:1},SO2:{SO2aq:1},Cl2:{Cl2aq:1},HCl:{'H+':1,'Cl-':1},NO2:{'H+':1,'NO3':1}};
 
@@ -902,6 +902,8 @@ R({'Mgs':1,'CuO':1},{'MgO':1,'Cus':1},'Mg + CuO →(t) MgO + Cu',['A bright flas
 R({'Als':2,'Fe2O3':1},{'Al2O3':1,'Fes':2},'2Al + Fe₂O₃ →(t) Al₂O₃ + 2Fe',['Thermite reaction: a blinding flash and molten iron; Al₂O₃ slag remains.','Термит реакциясы: көз қарықтыратын жарқыл, балқыған темір түзіледі; Al₂O₃ қалады.'],HD('#ffd36a'));
 R({'MgS':1},{'MgOH2':1,'↑H2S':1},'MgS + 2H₂O → Mg(OH)₂↓ + H₂S↑',['Magnesium sulfide is hydrolysed: a smell of rotten eggs (H₂S) and a white suspension.','Магний сульфиді гидролизденеді: шіріген жұмыртқа иісі (H₂S) және ақ суспензия.']);
 R({'Al2S3':1},{'AlOH3':2,'↑H2S':3},'Al₂S₃ + 6H₂O → 2Al(OH)₃↓ + 3H₂S↑',['Aluminium sulfide is completely hydrolysed: white Al(OH)₃ precipitate and H₂S (rotten-egg smell).','Алюминий сульфиді толық гидролизденеді: ақ Al(OH)₃ тұнбасы және H₂S (шіріген жұмыртқа иісі).']);
+R({'Mgs':3,'Prs':2},{'Mg3P2':1},'3Mg + 2P →(t) Mg₃P₂',['The mixture flares up with a white flash; magnesium phosphide forms. With water it gives off poisonous phosphine.','Қоспа ақ жарқылмен лап етеді; магний фосфиді түзіледі. Ол сумен әрекеттесіп, улы фосфин бөледі.'],HD('#fffbe8'));
+R({'Cas':3,'Prs':2},{'Ca3P2':1},'3Ca + 2P →(t) Ca₃P₂',['The mixture glows and reacts; brown calcium phosphide forms.','Қоспа қызарып әрекеттеседі; қоңыр кальций фосфиді түзіледі.'],HD('#ff6a2a'));
 /* ---- combustion spoon: burning in air over the flame ---- */
 const SPOON={heat:1,dry:1,cond:v=>v.type==='spoon'};
 const BRN=(c)=>Object.assign({burn:c},SPOON);
@@ -919,6 +921,13 @@ R({'Fes':3},{'Fe3O4':1},'3Fe + 2O₂ →(t) Fe₃O₄',['Iron filings burn with 
 R({'Zns':2},{'ZnO':2},'2Zn + O₂ →(t) 2ZnO',['Zinc burns with a bluish-green flame and white smoke; white ZnO remains (yellow while hot).','Мырыш көкшіл-жасыл жалынмен, ақ түтін шығарып жанады; ақ ZnO қалады (ыстықта сарғыш).'],BRN('#9fe0c8'));
 R({'Als':4},{'Al2O3':2},'4Al + 3O₂ →(t) 2Al₂O₃',['Aluminium becomes coated with white Al₂O₃; it burns brightly only as a fine powder.','Алюминий бетін ақ Al₂O₃ қабаты басады; ұнтақ күйінде ғана жарқырап жанады.'],BRN('#fff3d6'));
 R({'Cus':2},{'CuO':2},'2Cu + O₂ →(t) 2CuO',['Copper does not burn: it glows and becomes coated with black copper(II) oxide; the flame turns slightly green.','Мыс жанбайды: қызып, бетін қара мыс(II) оксиді басады; жалын сәл жасылданады.'],Object.assign(BRN('#7fe08a'),{cond:v=>v.type==='spoon'&&!v.sp['MgO']&&!v.sp['Al2O3']}));
+R({'Pws':1},{'P2O5':2},'P₄ + 5O₂ → 2P₂O₅',['White phosphorus ignites by itself in air (already at about 40 °C) and burns with a bright flame and thick white smoke of P₂O₅. That is why it is kept under water.','Ақ фосфор ауада өздігінен тұтанады (40 °C-тан-ақ) және жарқын жалынмен, P₂O₅-тің қою ақ түтінін шығарып жанады. Сондықтан оны су астында сақтайды.'],{dry:1,burn:'#fff1c4'});
+R({'Prs':2},{'P2O5':1},'4P + 5O₂ →(t) 2P₂O₅',['Red phosphorus catches fire and burns with a bright white-yellow flame, giving thick white smoke of phosphorus(V) oxide.','Қызыл фосфор тұтанып, ақшыл-сары жарқын жалынмен жанады; фосфор(V) оксидінің қою ақ түтіні шығады.'],BRN('#fff1c4'));
+R({'P2O5':1},{'H3PO4':2},'P₂O₅ + 3H₂O → 2H₃PO₄',['Phosphorus(V) oxide dissolves in water with a hiss, forming phosphoric acid; the solution is acidic.','Фосфор(V) оксиді сумен ысылдап әрекеттесіп, фосфор қышқылын түзеді; ерітінді қышқылдық болады.']);
+R({'H3PO4':1,'OH-':3},{'PO4':1},'H₃PO₄ + 3OH⁻ → PO₄³⁻ + 3H₂O',['Phosphoric acid is neutralised to phosphate ions; now AgNO₃ gives yellow Ag₃PO₄.','Фосфор қышқылы бейтараптанып, фосфат иондарына айналады; енді AgNO₃ сары Ag₃PO₄ тұнбасын береді.']);
+R({'Prs':1,'H+':5,'NO3':5},{'H3PO4':1,'↑NO2':5},'P + 5HNO₃(conc.) →(t) H₃PO₄ + 5NO₂↑ + H₂O',['On heating, concentrated nitric acid oxidises phosphorus: brown NO₂ is given off and phosphoric acid forms.','Қыздырғанда концентрлі азот қышқылы фосфорды тотықтырады: қоңыр NO₂ бөлініп, фосфор қышқылы түзіледі.'],{heat:1,cond:v=>(v.sp['H+']||0)/v.vol>6});
+R({'Mg3P2':1},{'MgOH2':3,'↑PH3':2},'Mg₃P₂ + 6H₂O → 3Mg(OH)₂↓ + 2PH₃↑',['Phosphine is given off (garlic smell, very poisonous; impure phosphine can ignite in air); a white suspension of Mg(OH)₂ forms.','Фосфин бөлінеді (сарымсақ иісті, өте улы; қоспалы фосфин ауада тұтануы мүмкін); ақ Mg(OH)₂ суспензиясы түзіледі.']);
+R({'Ca3P2':1},{'Ca2+':3,'OH-':6,'↑PH3':2},'Ca₃P₂ + 6H₂O → 3Ca(OH)₂ + 2PH₃↑',['Phosphine is given off (garlic smell, very poisonous); the solution becomes alkaline.','Фосфин бөлінеді (сарымсақ иісті, өте улы); ерітінді сілтілік болады.']);
 R({'Ss':1},{'↑SO2':1},'S + O₂ →(t) SO₂↑',['Sulfur melts and burns with a small blue flame; choking SO₂ is released.','Күкірт балқып, кішкентай көк жалынмен жанады; тұншықтыратын SO₂ бөлінеді.'],BRN('#5a8cff'));
 R({'Na2O2':2},{'Na+':4,'OH-':4,'↑O2':1},'2Na₂O₂ + 2H₂O → 4NaOH + O₂↑',['The peroxide dissolves with fizzing: oxygen is released and the solution becomes alkaline.','Пероксид көпіршіп ериді: оттек бөлініп, ерітінді сілтілік болады.']);
 R({'KO2':4},{'K+':4,'OH-':4,'↑O2':3},'4KO₂ + 2H₂O → 4KOH + 3O₂↑',['The superoxide dissolves vigorously, releasing oxygen; the solution becomes alkaline.','Супероксид қарқынды еріп, оттек бөлінеді; ерітінді сілтілік болады.']);
@@ -1054,6 +1063,8 @@ const SOL=[
  {id:'sFe',f:'Fe',M:55.85,insol:'Fes',col:[72,74,78],n:N('Iron filings','Темір үгінділері')},
  {id:'sAl',f:'Al',M:26.98,insol:'Als',col:[206,210,216],n:N('Aluminium granules','Алюминий түйіршіктері')},
  {id:'sS',f:'S',M:32.06,insol:'Ss',col:[236,212,60],n:N('Sulfur powder','Күкірт ұнтағы')},
+ {id:'sPr',f:'P',M:30.97,insol:'Prs',col:[168,52,40],n:N('Red phosphorus','Қызыл фосфор')},
+ {id:'sPw',f:'P₄',M:123.9,insol:'Pws',col:[240,232,196],n:N('White phosphorus (under water)','Ақ фосфор (су астында)')},
  {id:'sNa',f:'Na',M:22.99,insol:'Nas',col:[214,214,206],n:N('Sodium (under kerosene)','Натрий (керосин астында)')},
  {id:'sK',f:'K',M:39.10,insol:'Ks',col:[206,204,212],n:N('Potassium (under kerosene)','Калий (керосин астында)')},
  {id:'sLi',f:'Li',M:6.94,insol:'Lis',col:[196,198,202],n:N('Lithium','Литий')},
