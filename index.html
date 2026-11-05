@@ -2383,7 +2383,7 @@ const pickables=[];                       // invisible hit volumes
 const TW=[];                              // running tweens
 const BUBS=[];                            // live bubbles
 const FX=[];                              // short-lived effects (sparks, clouds, drops)
-const CAM={tx:0,ty:.9,tz:.3,theta:0,phi:1.2,r:9.2,view:'table',rMin:5,rMax:18,outside:false,fly:null};
+const CAM={tx:0,ty:.9,tz:.3,theta:0,phi:1.2,r:7.6,view:'table',rMin:5,rMax:18,outside:false,fly:null};
 const c3=(r,g,b)=>new T3.Color(r/255,g/255,b/255).convertSRGBToLinear();
 const cHex=h=>new T3.Color(h).convertSRGBToLinear();
 function css2c(s){
@@ -2480,7 +2480,7 @@ function init3D(){
   const room=new T3.Mesh(new T3.BoxGeometry(68,32,56),new T3.MeshBasicMaterial({color:cHex('#d3dade'),side:T3.BackSide})); room.position.set(0,6.7,2); env.add(room);
   const fl=new T3.Mesh(new T3.PlaneGeometry(68,56),new T3.MeshBasicMaterial({color:cHex('#9aa4ab')})); fl.rotation.x=-Math.PI/2; fl.position.set(0,-9.2,2); env.add(fl);
   [-24,-8,8,24].forEach(x=>[-16,0,16].forEach(z=>{const pnl=new T3.Mesh(new T3.PlaneGeometry(10,4),new T3.MeshBasicMaterial({color:0xffffff})); pnl.rotation.x=Math.PI/2; pnl.position.set(x,22.5,z); env.add(pnl);}));
-  const win=new T3.Mesh(new T3.PlaneGeometry(14,13),new T3.MeshBasicMaterial({color:cHex('#eaf4fb')})); win.position.set(-26,9.8,-25.9); env.add(win);
+  const win=new T3.Mesh(new T3.PlaneGeometry(22,16.4),new T3.MeshBasicMaterial({color:cHex('#eaf4fb')})); win.position.set(-22,10.6,-25.9); env.add(win);
   const pm=new T3.PMREMGenerator(R3); envTex=pm.fromScene(env,.04).texture; scene.environment=envTex;
   // a near-black copy of the room, swapped in when the lights are off (same shader, no recompiling)
   room.material.color.copy(cHex('#0b0f12')); env.background=cHex('#07090b'); env.children.forEach(c=>{if(c!==room) c.material.color.copy(cHex(c===fl?'#08090a':'#1a1f24'));});
@@ -2510,7 +2510,7 @@ function applyLight(k){
   scene.background.copy(LIGHT.bgOff).lerp(LIGHT.bgOn,k);
   scene.environment=k>.4?envTex:LIGHT.envDark;
   if(LIGHT.panelMat) LIGHT.panelMat.color.setScalar(.12+.88*k);
-  if(LIGHT.windowMat) LIGHT.windowMat.color.setScalar(.22+.78*k);
+  sunLight(k);
   LAPTOP.concat(BAL).forEach(m=>m.color.setScalar(.6+.4*k));
 }
 function setLights(on){
@@ -2527,7 +2527,7 @@ function renderLightBtn(){
 function resize3D(){
   if(!R3) return; const w=stage.clientWidth||600,h=stage.clientHeight||400;
   R3.setSize(w,h,false); R3.domElement.style.width=w+'px'; R3.domElement.style.height=h+'px';
-  camera.aspect=w/h; camera.fov=w/h<1.1?48:34; camera.updateProjectionMatrix();
+  camera.aspect=w/h; camera.fov=w/h<1.1?54:42; camera.updateProjectionMatrix();
 }
 function placeCam(){
   if(CAM.fly){ const f=CAM.fly,k=Math.min(1,(performance.now()-f.t0)/f.ms),e=ease(k);
@@ -2617,6 +2617,7 @@ function buildSpoonAssy(o){
   return g;
 }
 function makeVessel(type,wx,wz,cap){
+  if(VHIDE) setVesselsHidden(false);
   S.cnt[type]=(S.cnt[type]||0)+1;
   cap=cap==null?VT[type].cap:cap; const szr=SIZES[type]&&SIZES[type].find(z=>z[0]===cap);
   const v={id:++S.uid,type,num:S.cnt[type],x:0,y:0,temp:22,sp:{},vol:0,cap,sc:szr?szr[1]:1,undis:[],ind:null,gasHist:new Set(),gasAvail:null,cloud:null,pptT:0,onBurner:null,heatLog:new Set(),feT:0,feLog:false,pos:{x:wx,z:wz},bubs:[]};
@@ -2657,6 +2658,7 @@ function makeVessel(type,wx,wz,cap){
   return v;
 }
 function makeLamp(wx,wz){
+  if(VHIDE) setVesselsHidden(false);
   S.cnt.lamp=(S.cnt.lamp||0)+1;
   const l={id:'L'+(++S.uid),num:S.cnt.lamp,x:0,y:0,lit:false,testC:null,testT:0,pos:{x:wx,z:wz}};
   if(!R3){S.lamps.push(l); l.el=makeLabel(l,false); renderLamp(l); return l;}
@@ -2676,7 +2678,7 @@ function makeLamp(wx,wz){
   l.fo=new T3.Mesh(new T3.LatheGeometry(prof(.26),24),new T3.MeshBasicMaterial({color:cHex('#ffb347'),transparent:true,opacity:.62,depthWrite:false}));
   l.fi=new T3.Mesh(new T3.LatheGeometry(prof(.12),20),new T3.MeshBasicMaterial({color:cHex('#7fb6ff'),transparent:true,opacity:.7,depthWrite:false}));
   l.fo.renderOrder=4; l.fi.renderOrder=5; fl.add(l.fo,l.fi);
-  l.light=new T3.PointLight(0xffa860,0,6,2); l.light.position.y=1.1; l.root.add(l.light);
+  l.light=new T3.PointLight(0xffa860,0,6,2); l.light.position.set(wx,1.1,wz); scene.add(l.light);   // kept outside the lamp group, so hiding the lamp never changes the light count
   pmats(); const lb=new T3.Mesh(new T3.PlaneGeometry(1.25,1.25),PM.shadow); lb.rotation.x=-Math.PI/2; lb.position.y=.006; lb.renderOrder=-1; l.root.add(lb);
   addHit(l,.5,1.4,0);
   l.ringS=new T3.Mesh(new T3.RingGeometry(1,1.12,48),MAT.ring); l.ringS.rotation.x=-Math.PI/2; l.ringS.visible=false; scene.add(l.ringS);
@@ -3094,7 +3096,7 @@ function removeObj(o){
 function dispose3D(o){
   o.el&&o.el.remove(); o.chip&&o.chip.remove(); o.thermo&&o.thermo.badge.remove();
   for(let i=BUBS.length-1;i>=0;i--) if(BUBS[i].v===o) BUBS.splice(i,1);
-  if(o.root){scene.remove(o.root); [o.ringS,o.ringT].forEach(r=>r&&scene.remove(r));
+  if(o.root){scene.remove(o.root); [o.ringS,o.ringT,o.light].forEach(r=>r&&scene.remove(r));
     const hi=pickables.indexOf(o.hit); if(hi>=0) pickables.splice(hi,1);}
 }
 function clearBench(){
@@ -3124,7 +3126,7 @@ function dropPayload(pl,cx,cy){
 const RC=new T3.Raycaster(), NDC=new T3.Vector2(), PLANE=new T3.Plane(new T3.Vector3(0,1,0),0);
 function setRay(x,y){const w=stage.clientWidth,h=stage.clientHeight; NDC.set(x/w*2-1,-(y/h)*2+1); RC.setFromCamera(NDC,camera);}
 function pick(x,y,exclude){
-  if(!R3) return null; setRay(x,y);
+  if(!R3||VHIDE) return null; setRay(x,y);
   const hits=RC.intersectObjects(pickables,false).filter(h=>h.object.userData.obj!==exclude);
   if(!hits.length) return null; const o=hits[0].object.userData.obj;
   return {o,kind:o.type?'vessel':'lamp',point:hits[0].point};
@@ -3155,7 +3157,7 @@ function bindPointer(){
         const tp=tablePoint(...rel(e)); PT.off=tp?{x:o.pos.x-tp.x,z:o.pos.z-tp.z}:{x:0,z:0}; o.dragging=true; o.el.classList.add('dragging');
         const tr=document.getElementById('trash'); tr.hidden=false; tr.textContent=t('trash');}}
     if(!PT.moved) return;
-    if(PT.mode==='orbit'){CAM.theta-= (e.clientX-PT.lx)*.006; CAM.phi=Math.max(.42,Math.min(1.42,CAM.phi-(e.clientY-PT.ly)*.005)); PT.lx=e.clientX; PT.ly=e.clientY;}
+    if(PT.mode==='orbit'){CAM.theta-= (e.clientX-PT.lx)*.006; CAM.phi=Math.max(CAM.view==='table'?.42:.12,Math.min(CAM.view==='table'?1.5:2.95,CAM.phi-(e.clientY-PT.ly)*.005));   /* away from the table you can look up at the ceiling */ PT.lx=e.clientX; PT.ly=e.clientY;}
     else if(PT.mode==='pan'){const k=CAM.r*.0016,ct=Math.cos(CAM.theta),st=Math.sin(CAM.theta),ddx=(e.clientX-PT.lx)*k,ddy=(e.clientY-PT.ly)*k;
       const tb=CAM.view==='table'&&!CAM.outside;
       CAM.tx=Math.max(tb?-7:ROOM.x0+1,Math.min(tb?7:ROOM.x1-1,CAM.tx-ddx*ct)); CAM.tz=Math.max(tb?-3:ROOM.z0+.5,Math.min(tb?3:(CAM.outside?ROOM.z1+4:ROOM.z1-1),CAM.tz+ddx*st)); CAM.ty=Math.max(tb?.2:ROOM.y0+1,Math.min(tb?3:ROOM.y1-1,CAM.ty+ddy)); PT.lx=e.clientX; PT.ly=e.clientY;}
@@ -3212,8 +3214,10 @@ function loop3D(){
   if(S.vessels.some(v=>isHeated(v)&&v.vol>0&&v.type!=='spoon'&&(v.temp??22)>85)&&Math.random()<dt*2.2) sfx.boilTick();
   const w=stage.clientWidth,h=stage.clientHeight,pulse=.45+.35*Math.sin(tn/260);
   // vessels: liquid planes, surface disc, bubbles, rings, labels
+  for(const [,L] of LINKS) L.g.visible=!VHIDE;
   S.vessels.forEach(v=>{
     if(!v.root) return;
+    v.root.visible=!VHIDE;
     v.root.updateMatrixWorld(true);
     const P=PROF[v.type],tilt=Math.abs(v.root.rotation.z);
     if(v.vol>0&&tilt<1.15){
@@ -3222,14 +3226,15 @@ function loop3D(){
     }else{v.liq.visible=false; v.surf.visible=false;}
     if(v._ph>0&&v.vol>0&&tilt<1.15){_v.set(0,P.t+v._ph,0); v.body.localToWorld(_v); v.planeP.constant=_v.y; v.ppt.visible=true;} else v.ppt.visible=false;
     const fp=foot(v);
-    v.ringS.visible=S.sel===v&&!v.onBurner; v.ringS.position.set(v.pos.x,.006,v.pos.z); v.ringS.scale.setScalar(fp*1.04);
-    const tg=v.el.classList.contains('target'); v.ringT.visible=tg; if(tg){v.ringT.position.set(v.pos.x,.008,v.pos.z); v.ringT.scale.setScalar(fp*1.18); v.ringT.material.opacity=pulse;}
+    v.ringS.visible=S.sel===v&&!v.onBurner&&!VHIDE; v.ringS.position.set(v.pos.x,.006,v.pos.z); v.ringS.scale.setScalar(fp*1.04);
+    const tg=v.el.classList.contains('target')&&!VHIDE; v.ringT.visible=tg; if(tg){v.ringT.position.set(v.pos.x,.008,v.pos.z); v.ringT.scale.setScalar(fp*1.18); v.ringT.material.opacity=pulse;}
     if(PT&&PT.mode==='obj'&&PT.moved&&PT.hover===v){v.ringT.visible=true; v.ringT.position.set(v.pos.x,.008,v.pos.z); v.ringT.scale.setScalar(fp*1.18); v.ringT.material.opacity=.9;}
   });
   S.lamps.forEach(l=>{
     if(!l.root) return;
     const testing=l.testC&&now()-l.testT<3000;
-    l.flame.visible=l.lit; l.light.intensity=l.lit?(.9+.15*Math.sin(tn/53))*(1+(1-LIGHT.k)*1.6):0; l.light.distance=6+(1-LIGHT.k)*4;
+    l.root.visible=!VHIDE; l.light.position.set(l.root.position.x,l.root.position.y+1.1,l.root.position.z);
+    l.flame.visible=l.lit; l.light.intensity=VHIDE?0:l.lit?(.9+.15*Math.sin(tn/53))*(1+(1-LIGHT.k)*1.6):0; l.light.distance=6+(1-LIGHT.k)*4;
     if(l.lit){const f=1+.05*Math.sin(tn/61)+.04*Math.sin(tn/23); l.flame.scale.set(1/f*(testing?1.25:1),f*(testing?1.35:1),1/f*(testing?1.25:1));
       const want=testing?l.testC:'#ffb347'; if(l._fc!==want){l._fc=want; l.fo.material.color.copy(css2c(want).c); l.light.color.copy(css2c(testing?want:'#ffa860').c);} l.fi.visible=!testing;}
     l.ringS.visible=false;
@@ -3361,7 +3366,7 @@ function gasEvolved(v,g,a){
 const SHARD=[];
 function explodeVessel(v){
   if(!S.vessels.includes(v)) return;
-  sfx.boom();
+  sfx.boom(); setTimeout(()=>assistantScare(v),120);
   if(D&&D.v===v) closeDose();
   const lc=liquidColor(v), liqC=lc?c3(...lc.col):c3(190,220,240);
   if(v.root){
@@ -3570,8 +3575,10 @@ function stdMat(hex,o){return new T3.MeshStandardMaterial(Object.assign({color:c
 function box(w,h,d,mat,x,y,z){const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),mat); m.position.set(x,y,z); return m;}
 
 function buildRoom(){
-  buildShell(); buildIsland(); buildBenches();
-  buildDoor(); buildPosters(); buildPortraits(); buildHood(); buildSink(); buildCoat(); buildLogo(); buildExtras(); buildAssistant();
+  buildShell(); buildIsland(); buildBenches(); buildAO(); buildSunlight();
+  buildDoor(); buildPosters(); buildPortraits(); buildHood(); buildSink(); buildCoat(); buildLogo(); buildExtras(); buildAssistant(); bindWorldUI();
+  // everything solid casts a shadow (the lights' shadow cameras only cover the table and the window beam)
+  scene.traverse(o=>{ if(o.isMesh&&!o.castShadow&&o.material&&!Array.isArray(o.material)&&!o.material.transparent&&o.material!==MAT.hit&&!o.material.isMeshBasicMaterial&&!o.material.isShaderMaterial) o.castShadow=true; if(o.isMesh&&!o.material.transparent) o.receiveShadow=true; });
 }
 
 /* ---------- the door: opens inwards on the left hinge; the outside face carries the sign ---------- */
@@ -3666,7 +3673,7 @@ function buildLogo(){
     g.fillStyle='#fff'; [[480,610,18],[548,590,12],[512,500,14]].forEach(([x,y,r])=>{g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();});
     g.textAlign='center'; g.font='bold 118px "Noto Sans",Arial'; g.fillText('newchemist',w/2,860);
   });
-  const m=new T3.Mesh(new T3.CircleGeometry(4,48),new T3.MeshStandardMaterial({map:t,roughness:.5,transparent:true})); m.position.set(-13.5,12.6,ROOM.z0+.06); scene.add(roomPick(m,'logo'));
+  const m=new T3.Mesh(new T3.CircleGeometry(4,48),new T3.MeshStandardMaterial({map:t,roughness:.5,transparent:true})); m.rotation.y=Math.PI/2; m.scale.setScalar(.85); m.position.set(ROOM.x0+.07,13.4,-22.4); scene.add(roomPick(m,'logo'));
 }
 
 /* ---------- scientists: stylised drawn portraits (not photographs) ---------- */
@@ -3720,7 +3727,7 @@ function buildHood(){
   const lamp=box(.2,.12,w-1.6,new T3.MeshBasicMaterial({color:0xfff8e6}),x1-1,9.6,z); g.add(lamp); LIGHT.hoodLamp=lamp;
   const sash=new T3.Mesh(new T3.PlaneGeometry(w-.9,5.2),glassMat()); sash.rotation.y=-Math.PI/2; sash.position.set(xc-3.55,7,z); sash.renderOrder=3; g.add(sash);
   g.add(box(.25,.3,w-.8,dark,xc-3.55,4.35,z));                                   // sash handle rail
-  const pick=box(7.4,13,w,MAT.hit,xc,4,z); g.add(roomPick(pick,'hood'));
+  const pick=box(7.4,12,w,MAT.hit,xc,6.2,z); g.add(roomPick(pick,'hood'));
   // a few bottles inside
   [[-2,'#9a6a3a'],[0,'#d9e6ee'],[2.2,'#7d9ec2']].forEach(([dz,c])=>{const b=new T3.Mesh(new T3.CylinderGeometry(.45,.45,1.6,16),stdMat(c,{roughness:.2,transparent:true,opacity:.85})); b.position.set(x1-2,.8,z+dz); g.add(b);});
   g.traverse(o=>{if(o.isMesh&&o!==pick) o.castShadow=true;});
@@ -3804,7 +3811,8 @@ const VIEWS={
   table:{l:[0,.9,.3],p:null},
   ptable:{l:[2,10.2,ROOM.z0],p:[2,10.2,-14],rMin:2.2},
   safety:{l:[20,9.8,ROOM.z0],p:[20,9.8,-17],rMin:2.2},
-  logo:{l:[-13.5,12.6,ROOM.z0],p:[-13.5,11,-13],rMin:3},
+  logo:{l:[ROOM.x0,13.4,-22.4],p:[-21,12.5,-21],rMin:3},
+  look:{l:[0,6.5,11],p:[0,5.9,12.6],rMin:.6,rMax:30},
   portraits:{l:[ROOM.x0,9.6,0],p:[-12,9.6,0],rMin:3},
   hood:{l:[ROOM.x1-5,4,-19],p:[13,9,-6],rMin:4},
   sink:{l:[29,2,0.5],p:[18,10,13],rMin:3},
@@ -3816,12 +3824,12 @@ const VIEWS={
 const _look=new T3.Vector3();
 function setSph(p,l){CAM.tx=l.x;CAM.ty=l.y;CAM.tz=l.z; CAM.r=p.distanceTo(l); CAM.phi=Math.acos(Math.max(-1,Math.min(1,(p.y-l.y)/CAM.r))); CAM.theta=Math.atan2(p.x-l.x,p.z-l.z);}
 function flyTo(p1,l1,ms,done){ CAM.fly={p0:camera.position.clone(),l0:new T3.Vector3(CAM.tx,CAM.ty,CAM.tz),p1,l1,t0:performance.now(),ms:RM()?1:ms,done}; }
-function tableCamPos(){const l=new T3.Vector3(...VIEWS.table.l),sp=Math.sin(1.2); return [new T3.Vector3(l.x,l.y+9.2*Math.cos(1.2),l.z+9.2*sp),l];}
+function tableCamPos(){const l=new T3.Vector3(...VIEWS.table.l),sp=Math.sin(1.2); return [new T3.Vector3(l.x,l.y+7.6*Math.cos(1.2),l.z+7.6*sp),l];}
 function focusView(key){
   if(CAM.outside) return;
   const V=VIEWS[key]; if(!V) return;
   let p,l; if(key==='table'){[p,l]=tableCamPos();} else {p=new T3.Vector3(...V.p); l=new T3.Vector3(...V.l);}
-  CAM.view=key; CAM.rMin=V.rMin||5; CAM.rMax=key==='table'?18:22;
+  CAM.view=key; CAM.rMin=V.rMin||5; CAM.rMax=V.rMax||(key==='table'?18:22);
   flyTo(p,l,900,()=>{}); renderNav();
 }
 function exitLab(){
@@ -3854,15 +3862,18 @@ function enterLab(){
 function roomClick(x,y){
   setRay(x,y); const h=RC.intersectObjects(ROOMPICK,false)[0]; if(!h) return false;
   const k=h.object.userData.room;
-  if(k==='door'){ CAM.outside?enterLab():exitLab(); return true; }
+  if(k==='door'){ hideInfo(); CAM.outside?enterLab():exitLab(); return true; }
   if(CAM.outside) return false;
-  if(k==='tap'){ toggleTap(); return true; }
-  if(k==='assistant'){ sayTip(); return true; }
-  focusView(k); return true;
+  if(k==='unit'){ hideInfo(); toggleUnit(h.object.userData.unit); return true; }
+  if(k==='info'){ showInfo(h.object.userData.info,x,y); return true; }
+  if(k==='tap'){ toggleTap(); showInfo('tap',x,y); return true; }
+  if(k==='assistant'){ hideInfo(); sayTip(); return true; }
+  focusView(k); showInfo(k,x,y); return true;
 }
 function renderNav(){
   const b=document.getElementById('bBack'),x=document.getElementById('bExit'),e=document.getElementById('bEnter'); if(!b) return;
   b.hidden=CAM.outside||CAM.view==='table'; x.hidden=CAM.outside; e.hidden=!CAM.outside;
+  const lk=document.getElementById('bLook'); if(lk){ lk.hidden=CAM.outside; lk.classList.toggle('on',CAM.view==='look'); }
   b.querySelector('span').textContent=t('backTable'); x.querySelector('span').textContent=t('exitLab'); e.querySelector('span').textContent=t('enterLab');
   labelsEl.style.visibility=CAM.outside?'hidden':'';
   // outside the lab (and on the way out and back) the reagent shelf, tool rail and journal are hidden
@@ -3881,6 +3892,7 @@ function pmats(){
   PM.top=new T3.MeshStandardMaterial({color:cHex('#dfe4e6'),roughness:.3,metalness:0,envMapIntensity:.35});
   PM.carc=stdMat('#c3cacf',{roughness:.6});
   PM.door=stdMat('#d5dbdf',{roughness:.4,envMapIntensity:.45});
+  PM.inner=stdMat('#b9c1c6',{roughness:.7});
   PM.plinth=stdMat('#4f5961',{roughness:.7});
   PM.alu=new T3.MeshStandardMaterial({color:cHex('#9aa3aa'),metalness:.9,roughness:.3});
   PM.black=stdMat('#22282d',{roughness:.45});
@@ -3901,35 +3913,54 @@ function labelTex(txt,sub,col){
 }
 
 /* ---------- base cabinets: plinth, carcass, drawer row and doors with bar handles ---------- */
-function cabinetRun(x0,x1,z0,z1,faces,topY){
+function cabinetRun(x0,x1,z0,z1,faces,topY,fill){
+  // hollow base units: every bay has a drawer (slides out) and a door (swings open); what is inside is built the first time it opens
   const P=pmats(), F=ROOM.y0, yT=(topY==null?0:topY), g=new T3.Group(); scene.add(g);
   const tH=.36, inset=.35, plH=1.0;
-  // worktop with a slightly rounded front edge
-  const top=box(x1-x0,tH,z1-z0,P.top,(x0+x1)/2,yT-tH/2,(z0+z1)/2); top.receiveShadow=true; g.add(top);
-  // carcass
+  const top=box(x1-x0,tH,z1-z0,P.top,(x0+x1)/2,yT-tH/2,(z0+z1)/2); top.receiveShadow=true; top.castShadow=true; g.add(top);
   const cx0=x0+inset*(faces.includes('-x')?1:0), cx1=x1-inset*(faces.includes('+x')?1:0), cz0=z0+inset*(faces.includes('-z')?1:0), cz1=z1-inset*(faces.includes('+z')?1:0);
-  const cH=yT-tH-F; g.add(box(cx1-cx0,cH-plH,cz1-cz0,P.carc,(cx0+cx1)/2,F+plH+(cH-plH)/2,(cz0+cz1)/2));
+  const yB=F+plH, cH=yT-tH-yB;
   g.add(box(cx1-cx0-.5,plH,cz1-cz0-.5,P.plinth,(cx0+cx1)/2,F+plH/2,(cz0+cz1)/2));
-  // fronts along each named face
+  // carcass shell: bottom, ends and a back (or centre) panel; bays are open at the front
+  g.add(box(cx1-cx0,.1,cz1-cz0,P.inner,(cx0+cx1)/2,yB+.05,(cz0+cz1)/2));
+  const two=faces.length>1;
+  if(faces[0]==='+z'||faces[0]==='-z'){
+    [cx0+.06,cx1-.06].forEach(x=>g.add(box(.12,cH,cz1-cz0,P.carc,x,yB+cH/2,(cz0+cz1)/2)));
+    if(two) g.add(box(cx1-cx0,cH,.12,P.inner,(cx0+cx1)/2,yB+cH/2,(cz0+cz1)/2)); else g.add(box(cx1-cx0,cH,.12,P.inner,(cx0+cx1)/2,yB+cH/2,faces[0]==='+z'?cz0+.06:cz1-.06));
+  }else{
+    [cz0+.06,cz1-.06].forEach(z=>g.add(box(cx1-cx0,cH,.12,P.carc,(cx0+cx1)/2,yB+cH/2,z)));
+    g.add(box(.12,cH,cz1-cz0,P.inner,faces[0]==='+x'?cx0+.06:cx1-.06,yB+cH/2,(cz0+cz1)/2));
+  }
   faces.forEach(f=>{
     const alongX=f==='+z'||f==='-z', a0=alongX?cx0:cz0, a1=alongX?cx1:cz1, L=a1-a0, n=Math.max(1,Math.round(L/4.6)), w=L/n;
     const s=f[0]==='+'?1:-1, fixed=alongX?(s>0?cz1:cz0):(s>0?cx1:cx0);
-    const dTop=yT-tH-.06, drH=1.7, dBot=F+plH+.06;
+    const D=(alongX?(cz1-cz0):(cx1-cx0))/(two?2:1)-.15;
+    const dTop=yT-tH-.06, drH=1.7, dBot=yB+.06, dh=dTop-drH-dBot;
+    const W=(u,y,d)=>alongX?new T3.Vector3(u,y,fixed-s*d):new T3.Vector3(fixed-s*d,y,u);   // u along the face, d inwards from the front
+    const B=(wu,h,wd,mat)=>new T3.Mesh(alongX?new T3.BoxGeometry(wu,h,wd):new T3.BoxGeometry(wd,h,wu),mat);
+    const N=alongX?new T3.Vector3(0,0,s):new T3.Vector3(s,0,0);
     for(let i=0;i<n;i++){
       const c=a0+w*(i+.5);
-      const put=(m,u,y,off)=>{ if(alongX) m.position.set(u,y,fixed+s*off); else m.position.set(fixed+s*off,y,u); g.add(m); };
-      const fr=(ww,hh)=>alongX?new T3.Mesh(new T3.BoxGeometry(ww,hh,.08),P.door):new T3.Mesh(new T3.BoxGeometry(.08,hh,ww),P.door);
-      // drawer
-      put(fr(w-.08,drH-.08),c,dTop-drH/2,.04);
-      const hb=alongX?new T3.Mesh(new T3.BoxGeometry(1.4,.09,.12),P.alu):new T3.Mesh(new T3.BoxGeometry(.12,.09,1.4),P.alu); put(hb,c,dTop-.42,.14);
-      // door
-      const dh=dTop-drH-dBot; put(fr(w-.08,dh-.08),c,dBot+dh/2,.04);
-      const vb=alongX?new T3.Mesh(new T3.BoxGeometry(.09,1.3,.12),P.alu):new T3.Mesh(new T3.BoxGeometry(.12,1.3,.09),P.alu); put(vb,c+(i%2?-1:1)*(w/2-.45),dBot+dh-1.1,.14);
+      if(i>0){const dv=B(.08,cH,D,P.inner); dv.position.copy(W(a0+w*i,yB+cH/2,D/2)); g.add(dv);}
+      const rail=B(w,.08,D,P.inner); rail.position.copy(W(c,dTop-drH,D/2)); g.add(rail);
+      // drawer: front + handle in a group that slides along the face normal
+      const dg=new T3.Group(); dg.position.copy(W(c,dTop-drH/2,0)); g.add(dg);
+      const fr=B(w-.08,drH-.08,.08,P.door); fr.position.copy(N).multiplyScalar(.04); dg.add(fr);
+      const hb=B(1.4,.09,.12,P.alu); hb.position.copy(N).multiplyScalar(.14); hb.position.y=drH/2-.42; dg.add(hb);
+      const du={kind:'drawer',g:dg,base:dg.position.clone(),N,open:0,built:false,w,D,drH,alongX,s,fill:fill||'any',idx:UNITS.length};
+      UNITS.push(du); roomPick(fr,'unit').userData.unit=du; roomPick(hb,'unit').userData.unit=du;
+      // door: hinged on the side away from its handle
+      const hs=i%2?-1:1, pv=new T3.Group(); pv.position.copy(W(c-hs*(w/2-.04),dBot+dh/2,0)); g.add(pv);
+      const df=B(w-.08,dh-.08,.08,P.door); const off=new T3.Vector3(); if(alongX) off.set(hs*(w/2-.04),0,0); else off.set(0,0,hs*(w/2-.04)); df.position.copy(off).addScaledVector(N,.04); pv.add(df);
+      const vb=B(.09,1.3,.12,P.alu); vb.position.copy(off).multiplyScalar((w-.9)/(w-.08)).addScaledVector(N,.14); vb.position.y=dh/2-1.1; pv.add(vb);
+      const ang=alongX?-hs*s*1.75:s*hs*1.75;
+      const ou={kind:'door',g:pv,ang,open:0,built:false,w,D,dh,c,dBot,W,B,alongX,s,fill:fill||'any',idx:UNITS.length};
+      UNITS.push(ou); roomPick(df,'unit').userData.unit=ou; roomPick(vb,'unit').userData.unit=ou;
     }
   });
   return g;
 }
-
+const UNITS=[];
 /* ---------- the island the experiments happen on ---------- */
 function buildIsland(){
   const P=pmats();
@@ -3964,7 +3995,7 @@ function reagentBottles(x,z,second,rot){
     const cap=new T3.Mesh(new T3.CylinderGeometry(.27,.27,.42,18),stdMat(brown?'#1f2428':c,{roughness:.5})); cap.position.y=2.5; g.add(cap);
     const lab=new T3.Mesh(new T3.CylinderGeometry(.556,.556,.75,24,1,true,-.9,1.8),new T3.MeshStandardMaterial({map:labelTex(f,null,c),roughness:.7}));
     lab.position.y=.9; if(rot) lab.rotation.y=Math.PI/2; g.add(lab);
-    scene.add(g); blob(g.position.x,g.position.z,1.6,1.6,0,.35);
+    scene.add(g); blob(g.position.x,g.position.z,1.6,1.6,0,.35); pickInfo(g,'bottles');
   });
 }
 function balance(x,z){
@@ -3978,6 +4009,7 @@ function balance(x,z){
   const sh=new T3.Mesh(new T3.BoxGeometry(2.7,2.4,2.6),glassMat()); sh.position.set(0,1.72,-.2); sh.renderOrder=3; g.add(sh);
   const fr=box(2.76,.08,2.66,P.alu,0,2.95,-.2); g.add(fr);
   blob(x,z,4,4.2,0,.32);
+  pickInfo(g,'balance');
 }
 const BAL=[];
 function tubeRack(x,z){
@@ -3990,6 +4022,7 @@ function tubeRack(x,z){
     const tb=new T3.Mesh(geoFor('tube').outer,glassMat()); tb.position.set(tx,.12,0); tb.renderOrder=3; g.add(tb);
     const lq=new T3.Mesh(new T3.CylinderGeometry(.115,.115,.55,14),stdMat(cols[i],{roughness:.15,transparent:true,opacity:.8})); lq.position.set(tx,.45,0); g.add(lq);}
   blob(x,z,4.6,1.8,0,.3);
+  pickInfo(g,'tubeRack');
 }
 function hotPlate(x,z){
   const P=pmats(), g=new T3.Group(); g.position.set(x,0,z); scene.add(g);
@@ -4004,6 +4037,7 @@ function hotPlate(x,z){
   const wq=new T3.Mesh(new T3.CylinderGeometry(.48,.48,.6,28),stdMat('#cfe6f2',{roughness:.05,transparent:true,opacity:.45})); wq.position.y=.32; bk.add(wq);
   bk.add(gradMesh('beaker',500));
   blob(x,z,4,4.4,0,.35);
+  pickInfo(g,'hotPlate');
 }
 function ringStand(x,z){
   const P=pmats(), g=new T3.Group(); g.position.set(x,0,z); scene.add(g);
@@ -4019,6 +4053,7 @@ function ringStand(x,z){
   const fg=new T3.Mesh(new T3.LatheGeometry(pts,32),glassMat()); fg.renderOrder=3; fl.add(fg);
   const fq=new T3.Mesh(new T3.SphereGeometry(.92,24,12,0,Math.PI*2,Math.PI*.55,Math.PI*.45),stdMat('#f0c6a0',{roughness:.1,transparent:true,opacity:.6})); fl.add(fq);
   blob(x,z+.3,2.8,3.4,0,.35);
+  pickInfo(g,'ringStand');
 }
 function laptop(x,z){
   const P=pmats(), g=new T3.Group(); g.position.set(x,0,z); g.rotation.y=-.12; scene.add(g);
@@ -4034,6 +4069,7 @@ function laptop(x,z){
     c.strokeStyle='#57c7d9';c.beginPath();for(let i=0;i<=60;i++){const X=40+i*7.6,Y=h-60-Math.sin(i/9)*20-i*1.2;i?c.lineTo(X,Y):c.moveTo(X,Y);}c.stroke();})}));
   scr.position.set(0,1.42,.06); lid.add(scr); LAPTOP.push(scr.material);
   blob(x,z+.2,5,3.8,0,.3);
+  pickInfo(g,'laptop');
 }
 const LAPTOP=[];
 function washBottle(x,z){
@@ -4045,12 +4081,13 @@ function washBottle(x,z){
   g.add(tube);
   const lab=new T3.Mesh(new T3.CylinderGeometry(.465,.465,.5,20,1,true,-.8,1.6),new T3.MeshStandardMaterial({map:labelTex('H₂O','дистилл.','#0d8a9e'),roughness:.7})); lab.position.y=.8; g.add(lab);
   blob(x,z,1.4,1.4,0,.35);
+  pickInfo(g,'washBottle');
 }
 function beakerStack(x,z){
   [[0,0,500],[1.7,.3,250],[.9,-1.1,100]].forEach(([dx,dz,cap])=>{
     const g=new T3.Group(); g.position.set(x+dx,0,z+dz); const s=cap===500?1.6:cap===250?1.25:1; g.scale.setScalar(s); scene.add(g);
     const b=new T3.Mesh(geoFor('beaker').outer,glassMat()); b.renderOrder=3; g.add(b); g.add(gradMesh('beaker',cap));
-    blob(x+dx,z+dz,1.3*s,1.3*s,0,.3);
+    blob(x+dx,z+dz,1.3*s,1.3*s,0,.3); pickInfo(g,'beakers');
   });
 }
 function microscope(x,z){
@@ -4064,6 +4101,7 @@ function microscope(x,z){
   [-.15,.15].forEach(dx=>{const ob=new T3.Mesh(new T3.CylinderGeometry(.07,.05,.45,8),P.alu); ob.position.set(dx,2.15,.45); g.add(ob);});
   [-1,1].forEach(s=>{const k=new T3.Mesh(new T3.CylinderGeometry(.3,.3,.14,16),P.black); k.rotation.z=Math.PI/2; k.position.set(s*.32,1.1,-1); g.add(k);});
   blob(x,z,3,2.4,0,.35);
+  pickInfo(g,'microscope');
 }
 function desiccator(x,z){
   const g=new T3.Group(); g.position.set(x,0,z); scene.add(g);
@@ -4073,6 +4111,7 @@ function desiccator(x,z){
   const gel=new T3.Mesh(new T3.CylinderGeometry(.88,.85,.3,28),stdMat('#4f7fd0',{roughness:.8})); gel.position.y=.2; g.add(gel);
   const plate=new T3.Mesh(new T3.CylinderGeometry(1,1,.05,32),stdMat('#f2efe8',{roughness:.7})); plate.position.y=1.12; g.add(plate);
   blob(x,z,2.8,2.8,0,.32);
+  pickInfo(g,'desiccator');
 }
 function phMeter(x,z){
   const P=pmats(), g=new T3.Group(); g.position.set(x,0,z); g.rotation.y=Math.PI/2; scene.add(g);
@@ -4085,6 +4124,7 @@ function phMeter(x,z){
   const gb=new T3.Mesh(geoFor('beaker').outer,glassMat()); gb.renderOrder=3; bk.add(gb);
   const wq=new T3.Mesh(new T3.CylinderGeometry(.48,.48,.5,24),stdMat('#d6ecf4',{roughness:.05,transparent:true,opacity:.45})); wq.position.y=.27; bk.add(wq);
   blob(x,z,2.6,3.2,0,.32);
+  pickInfo(g,'phMeter');
 }
 
 /* ---------- printed graduations: black scale, numbers and the volume, on the side facing the room ---------- */
@@ -4130,16 +4170,16 @@ function buildShell(){
   const ct=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#f4f5f6';g.fillRect(0,0,w,h);g.strokeStyle='#d6dbde';g.lineWidth=4;g.strokeRect(0,0,w,h);for(let i=0;i<500;i++){g.fillStyle='rgba(200,206,210,.6)';g.fillRect(seeded(i+3)*w,seeded(i*5+1)*h,2,2);}});
   ct.wrapS=ct.wrapT=T3.RepeatWrapping; ct.repeat.set(W/6,D/6);
   const ceil=new T3.Mesh(new T3.PlaneGeometry(W,D),new T3.MeshStandardMaterial({map:ct,roughness:.95})); ceil.rotation.x=Math.PI/2; ceil.position.set(0,R.y1,zc); scene.add(ceil);
-  LIGHT.panelMat=new T3.MeshBasicMaterial({color:0xffffff});
+  LIGHT.panelMat=new T3.MeshBasicMaterial({color:0xffffff,toneMapped:false});
   const frameM=new T3.MeshStandardMaterial({color:cHex('#c9d0d4'),metalness:.6,roughness:.35});
   [-24,-8,8,24].forEach(x=>[-16,0,16].forEach(z=>{
     scene.add(box(10.6,.35,4.6,frameM,x,R.y1-.12,z));
     scene.add(box(10,.1,4,LIGHT.panelMat,x,R.y1-.31,z));
   }));
   // walls (boxes, so the outside of the front wall is visible too); the front wall has a door opening
-  scene.add(box(W+2,H,1,wallM,0,cY,R.z0-.5));
-  scene.add(box(1,H,D+1,wallM,R.x0-.5,cY,zc));
-  scene.add(box(1,H,D+1,wallM,R.x1+.5,cY,zc));
+  const wz=R.z0-.5, wl=(a,b,y0,y1)=>{const m=box(b-a,y1-y0,1,wallM,(a+b)/2,(y0+y1)/2,wz); m.castShadow=true; scene.add(m);};
+  wl(R.x0-1,WIN.x0,R.y0,R.y1); wl(WIN.x1,R.x1+1,R.y0,R.y1); wl(WIN.x0,WIN.x1,R.y0,WIN.y0); wl(WIN.x0,WIN.x1,WIN.y1,R.y1);
+  [R.x0-.5,R.x1+.5].forEach(x=>{const m=box(1,H,D+1,wallM,x,cY,zc); m.castShadow=true; scene.add(m);});
   const dl=DOOR.x-DOOR.w/2, dr=DOOR.x+DOOR.w/2;
   [[R.x0-1,dl],[dr,R.x1+1]].forEach(([a,b])=>scene.add(box(b-a,H,1,[wallM,wallM,wallM,wallM,outM,wallM],(a+b)/2,cY,R.z1+.5)));
   const topH=R.y1-(R.y0+DOOR.h); scene.add(box(DOOR.w+.2,topH,1,[wallM,wallM,wallM,wallM,outM,wallM],DOOR.x,R.y0+DOOR.h+topH/2,R.z1+.5));
@@ -4147,36 +4187,30 @@ function buildShell(){
   const sk=stdMat('#5b666e',{roughness:.6}), ac=stdMat('#0d8a9e',{roughness:.5});
   scene.add(box(W,.9,.1,sk,0,R.y0+.45,R.z0+.05)); scene.add(box(.1,.9,D,sk,R.x0+.05,R.y0+.45,zc)); scene.add(box(.1,.9,D,sk,R.x1-.05,R.y0+.45,zc));
   const ay=R.y1-3.2;
-  scene.add(box(W,.28,.06,ac,0,ay,R.z0+.03)); scene.add(box(.06,.28,D,ac,R.x0+.03,ay,zc)); scene.add(box(.06,.28,D,ac,R.x1-.03,ay,zc));
+  scene.add(box(WIN.x0-R.x0,.28,.06,ac,(R.x0+WIN.x0)/2,ay,R.z0+.03)); scene.add(box(R.x1-WIN.x1,.28,.06,ac,(WIN.x1+R.x1)/2,ay,R.z0+.03)); scene.add(box(.06,.28,D,ac,R.x0+.03,ay,zc)); scene.add(box(.06,.28,D,ac,R.x1-.03,ay,zc));
   [[R.x0,dl],[dr,R.x1]].forEach(([a,b])=>scene.add(box(b-a,.28,.06,ac,(a+b)/2,ay,R.z1-.03)));
   buildWindows();
 }
-/* windows in the back wall: aluminium frames, a sill, and a daytime view of the city */
+/* a large window in the back wall: an opening with aluminium frames and a sill; the view outside changes from day to night */
+const WIN={x0:-33.2,x1:-10.8,y0:2.4,y1:18.8,day:null,night:null};
 function buildWindows(){
-  const R=ROOM, x0=-33, x1=-19.5, y0=3.4, y1=16.2, z=R.z0+.02;
-  const view=canvasTex(1024,1024,(g,w,h)=>{
-    const sky=g.createLinearGradient(0,0,0,h); sky.addColorStop(0,'#8fc3ea'); sky.addColorStop(.6,'#cfe5f3'); sky.addColorStop(1,'#eef4f6'); g.fillStyle=sky; g.fillRect(0,0,w,h);
-    g.fillStyle='rgba(255,255,255,.75)'; [[180,170,120],[620,120,160],[860,260,90]].forEach(([x,y,r])=>{g.beginPath();g.ellipse(x,y,r,r*.32,0,0,Math.PI*2);g.fill();});
-    // distant hills and skyline
-    g.fillStyle='#b8c9d4'; g.beginPath(); g.moveTo(0,640); for(let x=0;x<=w;x+=32) g.lineTo(x,610-Math.sin(x/90)*30-Math.sin(x/37)*12); g.lineTo(w,h); g.lineTo(0,h); g.fill();
-    for(let i=0;i<26;i++){const bw=40+seeded(i*3)*70,bx=seeded(i*7)*w,bh=120+seeded(i*11)*320,by=h*.82-bh; const sh=150+Math.floor(seeded(i*5)*50);
-      g.fillStyle=`rgb(${sh-20},${sh},${sh+18})`; g.fillRect(bx,by,bw,h-by);
-      g.fillStyle='rgba(235,245,250,.55)'; for(let yy=by+14;yy<h*.82-10;yy+=22) for(let xx=bx+8;xx<bx+bw-8;xx+=16) g.fillRect(xx,yy,8,10);}
-    g.fillStyle='#9fb0a0'; g.fillRect(0,h*.82,w,h*.18);
-    g.fillStyle='#6f8b6a'; for(let i=0;i<40;i++){const tx=seeded(i*13)*w; g.beginPath(); g.arc(tx,h*.83,18+seeded(i)*16,0,Math.PI*2); g.fill();}
-  });
-  const vm=new T3.MeshBasicMaterial({map:view}); LIGHT.windowMat=vm;
-  const pane=new T3.Mesh(new T3.PlaneGeometry(x1-x0,y1-y0),vm); pane.position.set((x0+x1)/2,(y0+y1)/2,z); scene.add(pane);
-  // glass sheen in front of the view
-  const sheen=new T3.Mesh(new T3.PlaneGeometry(x1-x0,y1-y0),new T3.MeshPhysicalMaterial({color:0xffffff,roughness:.05,transparent:true,opacity:.08,clearcoat:1,envMapIntensity:1.2,depthWrite:false}));
-  sheen.position.set((x0+x1)/2,(y0+y1)/2,z+.06); scene.add(sheen);
+  const R=ROOM, x0=WIN.x0, x1=WIN.x1, y0=WIN.y0, y1=WIN.y1, z=R.z0, cx=(x0+x1)/2, cy=(y0+y1)/2;
+  WIN.day=skyTex(false); WIN.night=skyTex(true);
+  const vm=new T3.MeshBasicMaterial({map:WIN.day}); LIGHT.windowMat=vm;
+  const view=new T3.Mesh(new T3.PlaneGeometry(64,40),vm); view.position.set(cx,cy+2,z-14); scene.add(view);
+  // reveal (the thickness of the wall round the opening)
+  const rv=stdMat('#e1e6e9',{roughness:.8});
+  [[x1-x0,.06,1,cx,y0,z-.5],[x1-x0,.06,1,cx,y1,z-.5],[.06,y1-y0,1,x0,cy,z-.5],[.06,y1-y0,1,x1,cy,z-.5]].forEach(([w,h,d,x,y,zz])=>scene.add(box(w,h,d,rv,x,y,zz)));
+  const sheen=new T3.Mesh(new T3.PlaneGeometry(x1-x0,y1-y0),new T3.MeshPhysicalMaterial({color:0xffffff,roughness:.05,transparent:true,opacity:.07,clearcoat:1,envMapIntensity:1.2,depthWrite:false}));
+  sheen.position.set(cx,cy,z-.5); scene.add(sheen);
   const fm=new T3.MeshStandardMaterial({color:cHex('#e9edf0'),metalness:.3,roughness:.4});
-  const fr=(w,h,x,y)=>scene.add(box(w,h,.4,fm,x,y,z+.2));
-  fr(x1-x0+.6,.4,(x0+x1)/2,y1+.2); fr(x1-x0+.6,.4,(x0+x1)/2,y0-.2); fr(.4,y1-y0,x0-.1,(y0+y1)/2); fr(.4,y1-y0,x1+.1,(y0+y1)/2);
-  [x0+(x1-x0)/3,x0+2*(x1-x0)/3].forEach(x=>fr(.3,y1-y0,x,(y0+y1)/2));
-  fr(x1-x0,.25,(x0+x1)/2,y0+(y1-y0)*.72);
-  // roller blind, half down
-  const bl=box(x1-x0+.2,.5,.5,stdMat('#d8dde0'),(x0+x1)/2,y1+.65,z+.3); scene.add(bl);
+  const fr=(w,h,x,y)=>{const m=box(w,h,.36,fm,x,y,z-.5); m.castShadow=true; scene.add(m);};
+  fr(x1-x0+.5,.4,cx,y1); fr(x1-x0+.5,.4,cx,y0); fr(.4,y1-y0,x0,cy); fr(.4,y1-y0,x1,cy);
+  for(let i=1;i<4;i++) fr(.3,y1-y0,x0+i*(x1-x0)/4,cy);
+  fr(x1-x0,.25,cx,y0+(y1-y0)*.7);
+  scene.add(box(x1-x0+1.2,.25,.9,stdMat('#f3f5f6',{roughness:.5}),cx,y0-.1,z+.35));   // sill
+  const bl=box(x1-x0+.6,.6,.5,stdMat('#d8dde0'),cx,y1+.75,z+.3); scene.add(bl);       // blind cassette
+  const hit=box(x1-x0,y1-y0,.3,MAT.hit,cx,cy,z-.3); scene.add(roomPick(hit,'info')); hit.userData.info='window';
 }
 /* ---------- small real-lab cues: clock, fire extinguisher, emergency signs ---------- */
 function buildExtras(){
@@ -4192,14 +4226,14 @@ function buildExtras(){
     g.fillStyle='#d4352a';g.beginPath();g.arc(256,256,12,0,Math.PI*2);g.fill(); tex.needsUpdate=true;};
   draw(); setInterval(draw,30000);
   const clk=new T3.Mesh(new T3.CircleGeometry(1.9,48),new T3.MeshStandardMaterial({map:tex,roughness:.4})); clk.rotation.y=-Math.PI/2; clk.position.set(R.x1-.12,14.2,SINK.z0+(SINK.z1-SINK.z0)/2); scene.add(clk);
-  const rim=new T3.Mesh(new T3.TorusGeometry(1.92,.12,8,48),PM.black||stdMat('#22282d')); rim.rotation.y=Math.PI/2; rim.position.copy(clk.position); rim.position.x-=.02; scene.add(rim);
+  const rim=new T3.Mesh(new T3.TorusGeometry(1.92,.12,8,48),PM.black||stdMat('#22282d')); rim.rotation.y=Math.PI/2; rim.position.copy(clk.position); rim.position.x-=.02; scene.add(rim); pickInfo(rim,'clock');
   // fire extinguisher by the door, with its sign
   const fx=DOOR.x+DOOR.w/2+3.2, fz=R.z1-.75, red=stdMat('#c8231d',{roughness:.35,envMapIntensity:.8});
   const ext=new T3.Mesh(new T3.CylinderGeometry(.62,.62,4.6,24),red); ext.position.set(fx,R.y0+3.3+2.3,fz); scene.add(ext);
   const dome=new T3.Mesh(new T3.SphereGeometry(.62,24,10,0,Math.PI*2,0,Math.PI/2),red); dome.position.set(fx,R.y0+3.3+4.6,fz); scene.add(dome);
   const valve=box(.3,.6,.3,pmats().black,fx,R.y0+3.3+5.1,fz); scene.add(valve);
   const hose=new T3.Mesh(new T3.TubeGeometry(new T3.CatmullRomCurve3([[fx+.15,R.y0+8.6,fz],[fx+.8,R.y0+8,fz-.1],[fx+.8,R.y0+5,fz-.2],[fx+.5,R.y0+4.3,fz-.3]].map(a=>new T3.Vector3(...a))),20,.08,6),PM.black); scene.add(hose);
-  scene.add(box(1.6,.3,.6,PM.alu,fx,R.y0+3.15,fz+.2));
+  scene.add(box(1.6,.3,.6,PM.alu,fx,R.y0+3.15,fz+.2)); pickInfo(ext,'extinguisher');
   const sign=(txt,bg,x,y,z,ry,w)=>{const m=new T3.Mesh(new T3.PlaneGeometry(w||2.6,1.3),new T3.MeshStandardMaterial({map:canvasTex(512,256,(c,W,H)=>{c.fillStyle=bg;c.fillRect(0,0,W,H);c.fillStyle='#fff';c.font='bold 60px "Noto Sans",Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(txt,W/2,H/2);}),roughness:.5}));
     m.position.set(x,y,z); m.rotation.y=ry; scene.add(m);};
   sign('ӨРТ СӨНДІРГІШ','#c8231d',fx,R.y0+12.8,R.z1-.04,Math.PI,3.2);
@@ -4209,7 +4243,342 @@ function buildExtras(){
   const gm=stdMat('#1f9d55',{roughness:.45});
   ew.add(box(.6,6,.6,gm,0,ROOM.y0+3,0));
   [-1,1].forEach(s=>{const c=new T3.Mesh(new T3.CylinderGeometry(.42,.3,.4,16),gm); c.position.set(-.6,ROOM.y0+6.3,s*.45); ew.add(c);});
-  sign('КӨЗ ЖУҒЫШ','#1f9d55',R.x1-.04,ROOM.y0+10,SINK.z1+3,-Math.PI/2,3);
+  sign('КӨЗ ЖУҒЫШ','#1f9d55',R.x1-.04,ROOM.y0+10,SINK.z1+3,-Math.PI/2,3); pickInfo(ew,'eyewash');
+}
+
+/* =====================================================================
+   WORLD LAYER: what is inside the drawers and cupboards, name-and-purpose
+   cards for everything in the room, putting the glassware away, looking
+   round the room (ceiling included), daylight and moonlight through the
+   window, soft contact shading, and a startled lab assistant
+   ===================================================================== */
+Object.assign(UI.kz,{hideV:'Ыдыстарды жасыру',showV:'Ыдыстарды көрсету',lookRound:'Айналаға қарау',scare:'Ойбай! Абайлаңыз!',scare2:'Не болды?! Бәрі аман ба?',infoClose:'Жабу',
+  unitOpen:'{n} ашылды',drawer:'Тартпа',cupboard:'Шкаф есігі'});
+Object.assign(UI.en,{hideV:'Put glassware away',showV:'Bring glassware back',lookRound:'Look around',scare:'Whoa! Careful!',scare2:'What happened?! Is everyone OK?',infoClose:'Close',
+  unitOpen:'{n} opened',drawer:'Drawer',cupboard:'Cupboard door'});
+
+/* ---------- names and purposes ---------- */
+const INFO={
+  minerals:{kz:['Минералдар жинағы','Кварц (SiO₂), пирит (FeS₂), малахит (Cu₂CO₃(OH)₂), галит (NaCl), күкірт және аметист үлгілері. Табиғи қосылыстардың құрамы мен кристалдарын зерттеуге арналған.'],en:['Mineral collection','Quartz (SiO₂), pyrite (FeS₂), malachite (Cu₂CO₃(OH)₂), halite (NaCl), sulfur and amethyst: samples for studying natural compounds and crystals.']},
+  goggles:{kz:['Қорғаныш көзілдірігі','Қышқыл, сілті шашырағанда және қыздырғанда көзді қорғайды. Зертханада үнемі киіп жүру керек.'],en:['Safety goggles','Protect the eyes from splashes of acid or alkali and when heating. Wear them the whole time in the lab.']},
+  metals:{kz:['Металл үлгілері','Мыс пластинасы, мырыш түйіршіктері, темір шегелер, магний таспасы және алюминий фольгасы: металдардың белсенділік қатарын және қышқылдармен әрекеттесуін көрсетуге.'],en:['Metal samples','Copper sheet, zinc granules, iron nails, magnesium ribbon and aluminium foil: for showing the activity series and reactions with acids.']},
+  tongs:{kz:['Тигель қысқышы','Қызған тигельді, буландырғыш тостағанды немесе металды отқа ұстауға және алуға арналған ұзын болат қысқыш.'],en:['Crucible tongs','Long steel tongs for holding and moving hot crucibles, evaporating dishes or metal in a flame.']},
+  crucible:{kz:['Фарфор тигельдер','Заттарды қатты қыздыруға, күйдіруге және балқытуға арналған ыстыққа төзімді фарфор ыдыстар (қақпағымен).'],en:['Porcelain crucibles','Heat-resistant porcelain cups with lids for strong heating, roasting and melting substances.']},
+  standparts:{kz:['Штатив бөліктері','Сақина, муфта (қосқыш) және қысқыш (лапка): колбаларды, воронкаларды және сынауықтарды штативке бекітуге.'],en:['Retort stand parts','Ring, boss head and clamp: for fixing flasks, funnels and tubes to a retort stand.']},
+  books:{kz:['Оқулықтар мен анықтамалықтар','Бейорганикалық химия оқулығы, ерігіштік кестесі бар анықтамалық және сапалық талдау әдістемесі.'],en:['Textbooks and handbooks','An inorganic chemistry textbook, a data handbook with the solubility table and a qualitative analysis guide.']},
+  notebooks:{kz:['Зертханалық дәптерлер','Тәжірибе барысын, бақылауларды, реакция теңдеулерін және қорытындыны жазуға арналған жұмыс дәптерлері.'],en:['Lab notebooks','For recording the procedure, observations, equations and conclusions of each experiment.']},
+  gloves:{kz:['Нитрил қолғаптар','Қолды реактивтерден қорғайды. Әр жұмыстан кейін ауыстырылады.'],en:['Nitrile gloves','Protect the hands from reagents; change them after each task.']},
+  spatula:{kz:['Шпательдер','Ұнтақ пен кристалл заттарды ыдысқа салуға арналған металл қасықшалар.'],en:['Spatulas','Small metal scoops for transferring powders and crystals.']},
+  brush:{kz:['Сынауық щеткалары','Сынауықтар мен колбаларды іші-сыртынан жууға арналған щеткалар.'],en:['Test-tube brushes','For scrubbing the inside of test tubes and flasks.']},
+  pipette:{kz:['Тамызғыштар (пипеткалар)','Ерітіндіні тамшылатып қосуға және аз көлемді өлшеуге арналған шыны түтікшелер, резеңке баллонымен.'],en:['Dropping pipettes','Glass tubes with a rubber bulb for adding solutions drop by drop and measuring small volumes.']},
+  mortar:{kz:['Келі мен келсап','Қатты заттарды ұнтаққа айналдыру үшін фарфор келіде келсаппен үгітеді.'],en:['Mortar and pestle','Porcelain bowl and pestle for grinding solids to a powder.']},
+  funnel:{kz:['Воронка және сүзгі қағаз','Тұнбаны ерітіндіден сүзіп бөлуге арналған: сүзгі қағазды бүктеп воронкаға салады.'],en:['Funnel and filter paper','For filtering a precipitate out of a solution: the folded paper sits in the funnel.']},
+  petri:{kz:['Петри табақшалары','Кристалдану, аз мөлшердегі реакциялар және үлгілерді сақтау үшін жалпақ шыны табақшалар.'],en:['Petri dishes','Shallow glass dishes for crystallisation, small reactions and keeping samples.']},
+  gauze:{kz:['Асбестсіз тор','Ыдысты штатив сақинасында біркелкі қыздыру үшін ортасы керамикалық болат тор.'],en:['Wire gauze','Steel gauze with a ceramic centre that spreads the heat under a vessel on a ring.']},
+  evapdish:{kz:['Буландырғыш тостаған','Ерітіндіні буландырып, еріген затты кристалл түрінде бөліп алуға арналған фарфор тостаған.'],en:['Evaporating dish','Porcelain dish for boiling off a solution to recover the dissolved solid.']},
+  litmus:{kz:['Индикатор қағаздары','Лакмус және әмбебап индикатор қағазы: ортаның қышқылдық не сілтілік екенін тез анықтауға.'],en:['Indicator paper','Litmus and universal indicator paper for a quick acid/alkali test.']},
+  lens:{kz:['Ұлғайтқыш әйнек','Кристалдардың пішінін және тұнбаның түрін жақыннан қарауға.'],en:['Magnifying glass','For a close look at crystal shapes and precipitates.']},
+  matches:{kz:['Сіріңке','Спирт шамын тұтатуға және газды жанған шырпымен тексеруге.'],en:['Matches','For lighting the spirit lamp and testing gases with a lit splint.']},
+  tweezers:{kz:['Пинцет','Натрий, калий сияқты белсенді металдардың кесегін және ұсақ заттарды ұстауға. Қолмен ұстауға болмайды!'],en:['Tweezers','For handling pieces of reactive metals such as sodium and potassium, and other small items. Never with bare hands!']},
+  holder:{kz:['Сынауық қысқышы','Сынауықты жалында қыздырғанда ұстап тұруға арналған сымды қысқыш.'],en:['Test-tube holder','Wire holder for gripping a test tube while heating it in a flame.']},
+  balance:{kz:['Аналитикалық таразы','Заттың массасын 0,001 г дәлдікпен өлшейді. Шыны қалқаны ауа ағынынан қорғайды.'],en:['Analytical balance','Weighs to 0.001 g; the glass draft shield keeps air currents out.']},
+  tubeRack:{kz:['Сынауық штативі','Сынауықтарды тік ұстап тұрады; бірнеше ерітіндіні қатар салыстыруға ыңғайлы.'],en:['Test-tube rack','Holds test tubes upright so several solutions can be compared side by side.']},
+  hotPlate:{kz:['Электр плитасы','Ыдыстарды ашық жалынсыз, температурасын реттеп қыздыруға арналған.'],en:['Hot plate','Heats vessels without an open flame, with an adjustable temperature.']},
+  ringStand:{kz:['Зертханалық штатив','Колба, воронка және басқа ыдыстарды қысқыш пен сақина арқылы биікке бекітеді.'],en:['Retort stand','Holds flasks, funnels and other glassware at a height with clamps and rings.']},
+  laptop:{kz:['Ноутбук және датчиктер','Цифрлық датчиктерден температура, pH өзгерісінің графигін жазып алады.'],en:['Laptop with sensors','Records graphs of temperature and pH from digital sensors.']},
+  washBottle:{kz:['Жуғыш бөтелке','Дистилденген сумен ыдысты шаюға және тұнбаны жууға арналған жұмсақ пластик бөтелке.'],en:['Wash bottle','Squeeze bottle of distilled water for rinsing glassware and washing precipitates.']},
+  beakers:{kz:['Химиялық стақандар','50–500 мл көлемді, бөліктері бар шыны стақандар: ерітінді дайындауға және араластыруға.'],en:['Beakers','Graduated glass beakers, 50–500 mL, for preparing and mixing solutions.']},
+  microscope:{kz:['Микроскоп','Кристалдарды және тұнба бөлшектерін үлкейтіп қарауға арналған оптикалық құрал.'],en:['Microscope','Optical instrument for magnifying crystals and precipitate particles.']},
+  desiccator:{kz:['Эксикатор','Ішіндегі силикагель ылғалды сіңіреді; заттарды құрғақ күйде сақтауға және кептіруге.'],en:['Desiccator','Silica gel inside absorbs moisture, keeping substances dry.']},
+  phMeter:{kz:['pH-метр','Электроды арқылы ерітіндінің pH мәнін дәл өлшейді.'],en:['pH meter','Measures the pH of a solution precisely with a glass electrode.']},
+  bottles:{kz:['Реактив бөтелкелері','Қышқылдар мен тұздар ерітінділері. Жарыққа сезімтал заттар қоңыр шыны бөтелкеде сақталады.'],en:['Reagent bottles','Acids and salt solutions; light-sensitive ones are kept in brown glass.']},
+  clock:{kz:['Қабырға сағаты','Нақты уақытты көрсетеді: реакция ұзақтығын бақылауға ыңғайлы.'],en:['Wall clock','Shows the real time, handy for timing reactions.']},
+  extinguisher:{kz:['Өрт сөндіргіш','Өрт шыққанда жалынды сөндіруге арналған. Шығу есігінің жанында тұрады.'],en:['Fire extinguisher','For putting out a fire; kept by the exit door.']},
+  eyewash:{kz:['Көз жуғыш','Көзге реактив тиген жағдайда көзді 15 минут бойы таза сумен жуу үшін.'],en:['Eyewash station','If a chemical gets in the eyes, rinse them with clean water for 15 minutes.']},
+  window:{kz:['Терезе','Зертхананы желдетуге және күндізгі жарық түсіруге арналған. Түнде Ай жарығы түседі.'],en:['Window','Lets in daylight and fresh air; at night the moon shines through it.']},
+  hood:{kz:['Тарту шкафы','Улы және иісті газдармен (Cl₂, H₂S, NO₂, NH₃) осы шкафтың ішінде ғана жұмыс істейді: желдеткіш газды сыртқа шығарады.'],en:['Fume hood','Poisonous or smelly gases (Cl₂, H₂S, NO₂, NH₃) are handled only inside it; a fan draws them outside.']},
+  tap:{kz:['Су краны және раковина','Ыдыс жууға және кран суын алуға. Кранды басып ашыңыз, ыдысты астына қойыңыз.'],en:['Tap and sink','For washing glassware and getting tap water: tap the tap and put a vessel under it.']},
+  ptable:{kz:['Периодтық жүйе','Д. И. Менделеевтің химиялық элементтер кестесі: реттік нөмір, таңба және салыстырмалы атомдық масса.'],en:['Periodic table','Mendeleev’s table of the elements: atomic number, symbol and relative atomic mass.']},
+  safety:{kz:['Қауіпсіздік ережелері','Зертханадағы жұмыс тәртібі. Жұмыс бастамас бұрын міндетті түрде оқып шығыңыз.'],en:['Safety rules','How to work safely in the lab; read them before you start.']},
+  portraits:{kz:['Ғалымдар галереясы','Әл-Фараби, Шоқан Уәлиханов, Д. И. Менделеев, Қаныш Сәтбаев, Евней Бөкетов, Өмірзақ Сұлтанғазин.'],en:['Scientists gallery','Al-Farabi, Shokan Ualikhanov, D. I. Mendeleev, Kanysh Satbayev, Evney Buketov, Umirzak Sultangazin.']},
+  coat:{kz:['Зертханалық халат','Киімді және денені реактивтерден қорғайды; жұмыс кезінде түймесін салып киеді.'],en:['Lab coat','Protects your clothes and skin from chemicals; wear it buttoned up.']},
+  ppe:{kz:['Жеке қорғаныш құралдары','Қорғаныш көзілдірігі мен нитрил қолғаптар.'],en:['Personal protective equipment','Safety goggles and nitrile gloves.']},
+  logo:{kz:['newchemist','Зертхананың логотипі.'],en:['newchemist','The lab’s logo.']}
+};
+function infoText(k){const e=INFO[k]; return e?(e[LANG==='kz'?'kz':'en']||e.en):null;}
+let infoEl=null, infoTimer=null;
+function showInfo(k,x,y){
+  const tx=infoText(k); if(!tx) return;
+  if(!infoEl){ infoEl=document.createElement('div'); infoEl.className='infocard'; infoEl.setAttribute('role','status'); bench.appendChild(infoEl);
+    infoEl.addEventListener('pointerdown',e=>e.stopPropagation()); }
+  infoEl.innerHTML=`<b>${esc(tx[0])}</b><p>${esc(tx[1])}</p><button type="button" class="btn">${esc(t('infoClose'))}</button>`;
+  infoEl.querySelector('button').onclick=hideInfo;
+  const W=bench.clientWidth,H=bench.clientHeight, sr=stage.getBoundingClientRect(), br=bench.getBoundingClientRect();
+  let px=(x==null?W/2:x+sr.left-br.left)+14, py=(y==null?H/2:y+sr.top-br.top)+14;
+  infoEl.hidden=false; const cw=infoEl.offsetWidth||300, ch=infoEl.offsetHeight||120;
+  px=Math.max(12,Math.min(W-cw-12,px)); py=Math.max(12,Math.min(H-ch-12,py));
+  infoEl.style.transform=`translate(${px.toFixed(0)}px,${py.toFixed(0)}px)`;
+  clearTimeout(infoTimer); infoTimer=setTimeout(hideInfo,9000);
+}
+function hideInfo(){ if(infoEl) infoEl.hidden=true; clearTimeout(infoTimer); }
+
+/* a pickable volume round a prop, so tapping it shows its card */
+function pickInfo(o,key){
+  o.updateMatrixWorld(true);
+  const bb=new T3.Box3().setFromObject(o), sz=bb.getSize(new T3.Vector3()), c=bb.getCenter(new T3.Vector3());
+  const m=box(sz.x+.12,sz.y+.12,sz.z+.12,MAT.hit,c.x,c.y,c.z); scene.add(roomPick(m,'info')); m.userData.info=key; return m;
+}
+function itemPick(g,key){ // same, but as a child that moves with a drawer
+  const bb=new T3.Box3().setFromObject(g), sz=bb.getSize(new T3.Vector3()), c=bb.getCenter(new T3.Vector3());
+  const m=box(sz.x+.08,sz.y+.08,sz.z+.08,MAT.hit,c.x,c.y,c.z); g.add(roomPick(m,'info')); m.userData.info=key; return g;
+}
+
+/* ---------- small things kept in drawers and cupboards (local origin: bottom centre, about 1.8 × 1.8 footprint) ---------- */
+const IM={};
+function imats(){
+  if(IM.por) return IM;
+  IM.por=stdMat('#f4f2ec',{roughness:.35,envMapIntensity:.6});
+  IM.steel=new T3.MeshStandardMaterial({color:cHex('#bfc6cb'),metalness:.9,roughness:.3});
+  IM.cu=new T3.MeshStandardMaterial({color:cHex('#c4703f'),metalness:.9,roughness:.35});
+  IM.zn=new T3.MeshStandardMaterial({color:cHex('#a9b1b6'),metalness:.8,roughness:.45});
+  IM.fe=new T3.MeshStandardMaterial({color:cHex('#5d6166'),metalness:.8,roughness:.5});
+  IM.mg=new T3.MeshStandardMaterial({color:cHex('#d9dde0'),metalness:.9,roughness:.25});
+  IM.gold=new T3.MeshStandardMaterial({color:cHex('#c9a23a'),metalness:1,roughness:.3});
+  IM.tray=stdMat('#e9ecee',{roughness:.6});
+  IM.rub=stdMat('#c9472f',{roughness:.6}); IM.blk=stdMat('#2a3036',{roughness:.5}); IM.wood=MAT.wood;
+  IM.glass=glassMat();
+  return IM;
+}
+const ITEMS={
+  minerals(){const M=imats(),g=new T3.Group(); g.add(box(1.7,.08,1.4,M.tray,0,.04,0));
+    const q=new T3.Mesh(new T3.CylinderGeometry(.13,.13,.42,6),new T3.MeshPhysicalMaterial({color:0xffffff,roughness:.1,transparent:true,opacity:.7,clearcoat:1})); q.position.set(-.5,.29,-.35); q.rotation.z=.3; g.add(q);
+    const py=box(.3,.3,.3,M.gold,.1,.23,-.38); py.rotation.y=.4; g.add(py);
+    const ma=new T3.Mesh(new T3.SphereGeometry(.26,10,8),stdMat('#1f8a5a',{roughness:.7})); ma.scale.y=.6; ma.position.set(.55,.2,-.3); g.add(ma);
+    const ha=box(.28,.28,.28,new T3.MeshPhysicalMaterial({color:cHex('#f3f1ea'),roughness:.3,transparent:true,opacity:.85}),-.45,.22,.3); ha.rotation.set(.2,.5,0); g.add(ha);
+    const su=new T3.Mesh(new T3.DodecahedronGeometry(.22,0),stdMat('#e8cc2a',{roughness:.6})); su.position.set(.08,.24,.32); g.add(su);
+    const am=new T3.Mesh(new T3.ConeGeometry(.16,.4,6),new T3.MeshPhysicalMaterial({color:cHex('#8e5bc4'),roughness:.15,transparent:true,opacity:.8})); am.position.set(.55,.28,.33); g.add(am);
+    return itemPick(g,'minerals');},
+  goggles(){const g=new T3.Group(),lensM=new T3.MeshPhysicalMaterial({color:cHex('#cfe9f5'),transparent:true,opacity:.45,roughness:.05,clearcoat:1});
+    [-1,1].forEach(s=>{const fr=new T3.Mesh(new T3.TorusGeometry(.32,.08,8,20),stdMat('#2f3a42')); fr.rotation.x=Math.PI/2; fr.position.set(s*.38,.1,0); g.add(fr);
+      const ln=new T3.Mesh(new T3.CircleGeometry(.3,20),lensM); ln.rotation.x=-Math.PI/2; ln.position.set(s*.38,.12,0); g.add(ln);});
+    const st=new T3.Mesh(new T3.TorusGeometry(.7,.04,6,24,Math.PI),stdMat('#0d8a9e')); st.rotation.x=-Math.PI/2; st.position.set(0,.06,-.1); g.add(st);
+    return itemPick(g,'goggles');},
+  metals(){const M=imats(),g=new T3.Group(); g.add(box(1.7,.08,1.4,M.tray,0,.04,0));
+    g.add(box(.7,.03,.45,M.cu,-.4,.1,-.35));
+    for(let i=0;i<9;i++){const z=new T3.Mesh(new T3.DodecahedronGeometry(.07,0),M.zn); z.position.set(.25+seeded(i)*.5,.13,-.5+seeded(i+9)*.35); g.add(z);}
+    for(let i=0;i<4;i++){const n=new T3.Mesh(new T3.CylinderGeometry(.025,.025,.7,6),M.fe); n.rotation.z=Math.PI/2; n.position.set(-.35,.11,.12+i*.09); g.add(n);}
+    const rb=new T3.Mesh(new T3.TorusGeometry(.18,.025,4,24),M.mg); rb.rotation.x=Math.PI/2; rb.scale.z=3; rb.position.set(.45,.12,.3); g.add(rb);
+    const al=new T3.Mesh(new T3.IcosahedronGeometry(.17,1),M.mg); al.scale.y=.6; al.position.set(.05,.15,.38); g.add(al);
+    return itemPick(g,'metals');},
+  tongs(){const M=imats(),g=new T3.Group();
+    [-1,1].forEach(s=>{const r=new T3.Mesh(new T3.CylinderGeometry(.03,.03,1.8,6),M.steel); r.rotation.z=Math.PI/2; r.rotation.y=s*.08; r.position.set(0,.06,s*.03); g.add(r);
+      const j=new T3.Mesh(new T3.TorusGeometry(.12,.03,6,12,Math.PI),M.steel); j.position.set(.95,.06,s*.1); j.rotation.x=Math.PI/2; g.add(j);});
+    return itemPick(g,'tongs');},
+  crucible(){const M=imats(),g=new T3.Group(), pr=[[0,0],[.18,0],[.22,.03],[.3,.42],[.32,.44],[.27,.44],[.17,.06],[0,.06]].map(p=>V2(p[0],p[1])), ge=new T3.LatheGeometry(pr,24);
+    [[-.45,0],[.35,-.25],[.2,.45]].forEach(([x,z],i)=>{const c=new T3.Mesh(ge,M.por); c.position.set(x,0,z); g.add(c);
+      if(i<2){const l=new T3.Mesh(new T3.CylinderGeometry(.33,.33,.04,24),M.por); l.position.set(x,.47,z); g.add(l); const k=new T3.Mesh(new T3.SphereGeometry(.06,8,6),M.por); k.position.set(x,.52,z); g.add(k);}});
+    return itemPick(g,'crucible');},
+  standparts(){const M=imats(),g=new T3.Group();
+    const ring=new T3.Mesh(new T3.TorusGeometry(.42,.035,8,28),M.fe); ring.rotation.x=Math.PI/2; ring.position.set(-.3,.04,0); g.add(ring);
+    const rr=new T3.Mesh(new T3.CylinderGeometry(.03,.03,.7,6),M.fe); rr.rotation.z=Math.PI/2; rr.position.set(.38,.04,0); g.add(rr);
+    g.add(box(.26,.26,.26,M.blk,.55,.13,.55)); const sc=new T3.Mesh(new T3.CylinderGeometry(.03,.03,.4,6),M.steel); sc.rotation.x=Math.PI/2; sc.position.set(.55,.13,.82); g.add(sc);
+    const cl=new T3.Mesh(new T3.CylinderGeometry(.03,.03,.9,6),M.steel); cl.rotation.z=Math.PI/2; cl.position.set(.25,.05,-.6); g.add(cl);
+    [-1,1].forEach(s=>{const j=box(.3,.08,.08,stdMat('#c9472f'),-.3,.05,-.6+s*.09); g.add(j);});
+    return itemPick(g,'standparts');},
+  books(){const g=new T3.Group(), B=[['Бейорганикалық химия','#24527a'],['Химия. Анықтамалық','#7a2f2f'],['Сапалық талдау','#2f6a3f']];
+    B.forEach(([n,c],i)=>{const h=.22,tex=canvasTex(512,128,(x,w,hh)=>{x.fillStyle=c;x.fillRect(0,0,w,hh);x.fillStyle='#f3e9c8';x.font='bold 46px "Noto Sans",Arial';x.textAlign='center';x.textBaseline='middle';x.fillText(n,w/2,hh/2);});
+      const cover=stdMat(c,{roughness:.7}), pages=stdMat('#f3efe4',{roughness:.9}), sp=new T3.MeshStandardMaterial({map:tex,roughness:.7});
+      const b=new T3.Mesh(new T3.BoxGeometry(1.5,h,1.05),[cover,sp,cover,cover,pages,pages]); b.position.set(0,h/2+i*h,0); b.rotation.y=(i-1)*.08; g.add(b);});
+    return itemPick(g,'books');},
+  notebooks(){const g=new T3.Group(), cols=['#e3a21a','#0d8a9e','#c62f2f'];
+    cols.forEach((c,i)=>{const tex=canvasTex(256,192,(x,w,h)=>{x.fillStyle=c;x.fillRect(0,0,w,h);x.fillStyle='#fff';x.fillRect(30,50,w-60,70);x.fillStyle='#1d2a31';x.font='bold 22px "Noto Sans",Arial';x.textAlign='center';x.fillText('Зертханалық',w/2,80);x.fillText('журнал',w/2,106);});
+      const m=new T3.Mesh(new T3.BoxGeometry(1,.06,1.35),[stdMat(c),stdMat(c),new T3.MeshStandardMaterial({map:tex,roughness:.8}),stdMat('#f3efe4'),stdMat('#f3efe4'),stdMat('#f3efe4')]);
+      m.position.set(-.2+i*.2,.03+i*.065,(i-1)*.08); m.rotation.y=(i-1)*.15; g.add(m);});
+    const pen=new T3.Mesh(new T3.CylinderGeometry(.03,.03,.9,8),stdMat('#2c5fa8')); pen.rotation.z=Math.PI/2; pen.rotation.y=.4; pen.position.set(.55,.25,.4); g.add(pen);
+    return itemPick(g,'notebooks');},
+  gloves(){const g=new T3.Group(), tex=canvasTex(256,128,(x,w,h)=>{x.fillStyle='#f6f7f8';x.fillRect(0,0,w,h);x.fillStyle='#4a8fd6';x.fillRect(0,0,w,26);x.fillStyle='#1d2a31';x.font='bold 30px "Noto Sans",Arial';x.textAlign='center';x.fillText('ҚОЛҒАП · M',w/2,80);});
+    const b=new T3.Mesh(new T3.BoxGeometry(1.5,.7,.9),[stdMat('#f6f7f8'),stdMat('#f6f7f8'),stdMat('#f6f7f8'),stdMat('#f6f7f8'),new T3.MeshStandardMaterial({map:tex}),stdMat('#f6f7f8')]); b.position.y=.35; g.add(b);
+    const gl=new T3.Mesh(new T3.SphereGeometry(.2,10,8),stdMat('#4a8fd6')); gl.scale.set(1.4,.6,1); gl.position.set(.1,.74,0); g.add(gl);
+    return itemPick(g,'gloves');},
+  spatula(){const M=imats(),g=new T3.Group();
+    for(let i=0;i<3;i++){const r=new T3.Mesh(new T3.CylinderGeometry(.025,.025,1.5,6),M.steel); r.rotation.z=Math.PI/2; r.position.set(0,.04,(i-1)*.25); g.add(r);
+      const b=new T3.Mesh(new T3.SphereGeometry(.09,10,6,0,Math.PI*2,0,Math.PI/2),M.steel); b.scale.y=.4; b.rotation.x=Math.PI; b.position.set(.8,.06,(i-1)*.25); g.add(b);
+      const f=box(.25,.015,.14,M.steel,-.85,.03,(i-1)*.25); g.add(f);}
+    return itemPick(g,'spatula');},
+  brush(){const M=imats(),g=new T3.Group();
+    for(let i=0;i<2;i++){const r=new T3.Mesh(new T3.CylinderGeometry(.02,.02,1.6,5),M.steel); r.rotation.z=Math.PI/2; r.position.set(0,.12,(i-.5)*.4); g.add(r);
+      const br=new T3.Mesh(new T3.CylinderGeometry(.11,.11,.6,10),stdMat(i?'#e8dcc0':'#d6c4a0',{roughness:1})); br.rotation.z=Math.PI/2; br.position.set(.55,.12,(i-.5)*.4); g.add(br);}
+    return itemPick(g,'brush');},
+  pipette(){const M=imats(),g=new T3.Group();
+    for(let i=0;i<3;i++){const p=new T3.Mesh(new T3.CylinderGeometry(.04,.02,1.3,8),M.glass); p.rotation.z=Math.PI/2; p.position.set(0,.06,(i-1)*.22); p.renderOrder=3; g.add(p);
+      const bu=new T3.Mesh(new T3.SphereGeometry(.11,10,8),M.rub); bu.scale.x=1.5; bu.position.set(-.75,.1,(i-1)*.22); g.add(bu);}
+    return itemPick(g,'pipette');},
+  mortar(){const M=imats(),g=new T3.Group();
+    const bowl=new T3.Mesh(new T3.LatheGeometry([[0,0],[.3,0],[.34,.05],[.55,.35],[.57,.5],[.5,.5],[.3,.18],[0,.14]].map(p=>V2(p[0],p[1])),28),M.por); g.add(bowl);
+    const ps=new T3.Mesh(new T3.CylinderGeometry(.06,.12,.9,12),M.por); ps.position.set(.15,.5,0); ps.rotation.z=-.5; g.add(ps);
+    return itemPick(g,'mortar');},
+  funnel(){const M=imats(),g=new T3.Group();
+    const f=new T3.Mesh(new T3.LatheGeometry([[.05,0],[.05,.5],[.06,.55],[.5,1.0],[.52,1.02]].map(p=>V2(p[0],p[1])),24),M.glass); f.rotation.z=Math.PI/2; f.position.set(-.1,.5,0); f.renderOrder=3; g.add(f);
+    for(let i=0;i<5;i++){const d=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.01,28),stdMat('#fbfbf8',{roughness:1})); d.position.set(.6,.01+i*.012,.3); g.add(d);}
+    return itemPick(g,'funnel');},
+  petri(){const M=imats(),g=new T3.Group();
+    for(let i=0;i<4;i++){const d=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.12,28,1,true),M.glass); d.position.set(0,.06+i*.13,0); d.renderOrder=3; g.add(d);
+      const b=new T3.Mesh(new T3.CircleGeometry(.45,28),M.glass); b.rotation.x=-Math.PI/2; b.position.y=.005+i*.13; g.add(b);}
+    return itemPick(g,'petri');},
+  gauze(){const g=new T3.Group();
+    for(let i=0;i<3;i++){const m=new T3.Mesh(new T3.BoxGeometry(1,.012,1),new T3.MeshStandardMaterial({map:gauzeTex(),roughness:.8,metalness:.3})); m.position.set((i-1)*.08,.01+i*.015,(i-1)*.06); m.rotation.y=(i-1)*.12; g.add(m);}
+    return itemPick(g,'gauze');},
+  evapdish(){const M=imats(),g=new T3.Group();
+    const d=new T3.Mesh(new T3.SphereGeometry(.55,24,10,0,Math.PI*2,Math.PI*.6,Math.PI*.4),M.por); d.position.y=.5; g.add(d);
+    const sp=box(.12,.04,.08,M.por,.55,.3,0); g.add(sp);
+    return itemPick(g,'evapdish');},
+  litmus(){const g=new T3.Group();
+    [['#d94b4b',-.35],['#4b6fd9',0],['#e3b021',.35]].forEach(([c,z])=>{const b=box(.9,.08,.3,stdMat(c,{roughness:.9}),0,.04,z); g.add(b); g.add(box(.85,.02,.26,stdMat('#f3efe4'),0,.09,z));});
+    return itemPick(g,'litmus');},
+  lens(){const M=imats(),g=new T3.Group();
+    const r=new T3.Mesh(new T3.TorusGeometry(.35,.04,8,28),M.blk); r.rotation.x=Math.PI/2; r.position.y=.05; g.add(r);
+    const l=new T3.Mesh(new T3.CircleGeometry(.34,28),new T3.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.25,roughness:0,clearcoat:1})); l.rotation.x=-Math.PI/2; l.position.y=.05; g.add(l);
+    const h=new T3.Mesh(new T3.CylinderGeometry(.06,.06,.7,8),M.blk); h.rotation.z=Math.PI/2; h.position.set(.7,.05,0); g.add(h);
+    return itemPick(g,'lens');},
+  matches(){const g=new T3.Group(), tex=canvasTex(128,96,(x,w,h)=>{x.fillStyle='#c8231d';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.font='bold 24px "Noto Sans",Arial';x.textAlign='center';x.fillText('СІРІҢКЕ',w/2,56);});
+    [0,1].forEach(i=>{const b=new T3.Mesh(new T3.BoxGeometry(.55,.18,.38),[stdMat('#8a5a3a'),stdMat('#8a5a3a'),new T3.MeshStandardMaterial({map:tex}),stdMat('#c8231d'),stdMat('#c8231d'),stdMat('#c8231d')]); b.position.set(i*.65-.3,.09,0); b.rotation.y=i*.3; g.add(b);});
+    return itemPick(g,'matches');},
+  tweezers(){const M=imats(),g=new T3.Group();
+    [-1,1].forEach(s=>{const a=box(1.2,.03,.06,M.steel,0,.03,s*.05); a.rotation.y=s*.04; g.add(a);});
+    return itemPick(g,'tweezers');},
+  holder(){const M=imats(),g=new T3.Group();
+    const w=new T3.Mesh(new T3.CylinderGeometry(.02,.02,1.1,5),M.steel); w.rotation.z=Math.PI/2; w.position.set(.2,.06,0); g.add(w);
+    const h=new T3.Mesh(new T3.CylinderGeometry(.06,.06,.6,10),MAT.wood); h.rotation.z=Math.PI/2; h.position.set(-.55,.06,0); g.add(h);
+    const j=new T3.Mesh(new T3.TorusGeometry(.13,.02,6,14),M.steel); j.rotation.x=Math.PI/2; j.position.set(.85,.06,0); g.add(j);
+    return itemPick(g,'holder');}
+};
+const SMALL=['minerals','goggles','metals','tongs','spatula','pipette','litmus','tweezers','petri','gauze','lens','matches','brush','holder','notebooks'];
+const BIG=['books','crucible','standparts','mortar','funnel','evapdish','gloves','notebooks','minerals','metals','petri','crucible'];
+function fillUnit(u){
+  u.built=true; const M=imats();
+  if(u.kind==='drawer'){
+    // the drawer box behind the front, as deep as it slides out
+    const od=u.od, U=u.alongX?new T3.Vector3(1,0,0):new T3.Vector3(0,0,1), inw=u.N.clone().negate(), wi=u.w-.5, hh=u.drH-.45, y0=-u.drH/2+.12;
+    const at=(uu,y,d)=>U.clone().multiplyScalar(uu).addScaledVector(inw,d).setY(y);
+    const mk=(a,b,c,x,y,d)=>{const m=new T3.Mesh(u.alongX?new T3.BoxGeometry(a,b,c):new T3.BoxGeometry(c,b,a),PM.inner); m.position.copy(at(x,y,d)); u.g.add(m);};
+    mk(wi,.05,od,0,y0,od/2+.08); mk(wi,hh,.05,0,y0+hh/2,od+.08); [-1,1].forEach(s=>mk(.05,hh,od,s*wi/2,y0+hh/2,od/2+.08));
+    const pick=[SMALL[(u.idx*3)%SMALL.length],SMALL[(u.idx*3+5)%SMALL.length]];
+    pick.forEach((k,j)=>{const it=ITEMS[k](); it.position.copy(at((j?1:-1)*wi/4.2,y0+.03,od/2+.1)); if(!u.alongX) it.rotation.y=-Math.PI/2; it.scale.setScalar(Math.min(1,(wi/2-.1)/1.8)); u.g.add(it);});
+  }else{
+    const W=u.W, Bx=u.B, D=u.D, sy=u.dBot+u.dh/2;
+    const sh=Bx(u.w-.25,.08,D-.2,PM.inner); sh.position.copy(W(u.c,sy,D/2)); scene.add(sh);
+    const ks=[BIG[(u.idx*2)%BIG.length],BIG[(u.idx*2+3)%BIG.length],BIG[(u.idx*2+7)%BIG.length]];
+    [[-1,u.dBot+.02,ks[0]],[1,u.dBot+.02,ks[1]],[0,sy+.05,ks[2]]].forEach(([side,y,k])=>{const it=ITEMS[k](); const p=W(u.c+side*u.w/4.2,y,Math.min(D/2,1.3)); it.position.copy(p);
+      it.rotation.y=u.alongX?(u.s>0?0:Math.PI):(u.s>0?-Math.PI/2:Math.PI/2); it.scale.setScalar(Math.min(1.3,(u.w/2-.2)/1.8)); scene.add(it);});
+  }
+}
+function toggleUnit(u){
+  if(u.busy) return; if(!u.built){ if(u.kind==='drawer') u.od=Math.min(2.6,u.D-.25); fillUnit(u); }
+  u.busy=true; const a=u.open, b=a?0:1; sfx.click();
+  tween(450,k=>{u.open=a+(b-a)*ease(k);
+    if(u.kind==='drawer') u.g.position.copy(u.base).addScaledVector(u.N,u.od*u.open); else u.g.rotation.y=u.ang*u.open;},()=>{u.busy=false;});
+}
+
+/* ---------- soft shading where the floor meets walls and cabinets ---------- */
+function aoTex(){ if(aoTex.t) return aoTex.t;
+  aoTex.t=canvasTex(8,128,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'rgba(0,0,0,.42)'); gr.addColorStop(.35,'rgba(0,0,0,.16)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,w,h);}); return aoTex.t; }
+function aoStrip(x,z,len,a,wd,y){
+  const gr=new T3.Group(); gr.position.set(x,(y==null?ROOM.y0:y)+.012,z); gr.rotation.y=a; scene.add(gr);
+  const m=new T3.Mesh(new T3.PlaneGeometry(len,wd||2.2),new T3.MeshBasicMaterial({map:aoTex(),transparent:true,depthWrite:false,toneMapped:false}));
+  m.rotation.x=-Math.PI/2; m.position.z=(wd||2.2)/2; m.renderOrder=-1; gr.add(m);
+}
+function buildAO(){
+  const R=ROOM, W=R.x1-R.x0, D=R.z1-R.z0, zc=(R.z0+R.z1)/2, P2=Math.PI/2;
+  aoStrip((R.x0+26)/2,R.z0+6.05,26-R.x0,0); aoStrip(R.x0+6.05,(R.z0+6.4+12)/2,12-R.z0-6.4,P2); aoStrip(R.x1,zc,D,-P2); aoStrip(0,R.z1,W,Math.PI);
+  aoStrip(0,3.05,16,0,1.8); aoStrip(0,-3.05,16,Math.PI,1.8); aoStrip(7.75,0,6.1,P2,1.8); aoStrip(-7.75,0,6.1,-P2,1.8);
+  aoStrip(26.95,-19,11.2,-P2,1.8); aoStrip(26.55,0,9.8,-P2,1.8);
+}
+
+/* ---------- daylight and moonlight through the window ---------- */
+const SUN={L:null,shaft:null};
+function buildSunlight(){
+  const R=ROOM, cx=(WIN.x0+WIN.x1)/2;
+  const L=new T3.DirectionalLight(0xfff1dc,.5); L.position.set(cx+5,36,R.z0-44); L.target.position.set(cx,R.y0,R.z0+22);
+  L.castShadow=true; L.shadow.mapSize.set(2048,2048); const c=L.shadow.camera; c.left=-62;c.right=62;c.top=62;c.bottom=-62;c.near=1;c.far=190; L.shadow.bias=-.0006; L.shadow.normalBias=.04;
+  scene.add(L,L.target); SUN.L=L; SUN.day=new T3.Color(0xfff1dc); SUN.night=new T3.Color(0x9db8ff);
+  // a faint beam of light from the window to the floor, visible when the room is dark
+  const d=L.target.position.clone().sub(L.position).normalize(), corners=[[WIN.x0,WIN.y0],[WIN.x1,WIN.y0],[WIN.x1,WIN.y1],[WIN.x0,WIN.y1]].map(([x,y])=>new T3.Vector3(x,y,R.z0+.1));
+  const ends=corners.map(p=>p.clone().addScaledVector(d,(R.y0+.05-p.y)/d.y));
+  const pos=[], al=[];
+  for(let i=0;i<4;i++){const a=corners[i],b=corners[(i+1)%4],a2=ends[i],b2=ends[(i+1)%4]; pos.push(...a.toArray(),...b.toArray(),...b2.toArray(),...a.toArray(),...b2.toArray(),...a2.toArray()); al.push(1,1,0,1,0,0);}
+  const geo=new T3.BufferGeometry(); geo.setAttribute('position',new T3.Float32BufferAttribute(pos,3)); geo.setAttribute('alpha',new T3.Float32BufferAttribute(al,1));
+  const mat=new T3.ShaderMaterial({transparent:true,depthWrite:false,side:T3.DoubleSide,blending:T3.AdditiveBlending,uniforms:{op:{value:0},col:{value:new T3.Color(0x7f9cff)}},
+    vertexShader:'attribute float alpha; varying float va; void main(){ va=alpha; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader:'uniform float op; uniform vec3 col; varying float va; void main(){ gl_FragColor=vec4(col*op*va,1.0); }'});
+  SUN.shaft=new T3.Mesh(geo,mat); SUN.shaft.renderOrder=6; scene.add(SUN.shaft);
+}
+function sunLight(k){
+  if(!SUN.L) return;
+  SUN.L.color.copy(SUN.night).lerp(SUN.day,k); SUN.L.intensity=.5*k+1.15*(1-k);
+  SUN.shaft.material.uniforms.op.value=.09*(1-k); SUN.shaft.visible=k<.98;
+  if(LIGHT.windowMat){ LIGHT.windowMat.map=k>.45?WIN.day:WIN.night; LIGHT.windowMat.color.setScalar(k>.45?.55+.45*k:1); }
+}
+function skyTex(night){
+  return canvasTex(1024,768,(g,w,h)=>{
+    const sky=g.createLinearGradient(0,0,0,h);
+    if(night){sky.addColorStop(0,'#050b1c');sky.addColorStop(.65,'#14244a');sky.addColorStop(1,'#26385f');}
+    else{sky.addColorStop(0,'#86bce6');sky.addColorStop(.6,'#cfe5f3');sky.addColorStop(1,'#eef4f6');}
+    g.fillStyle=sky; g.fillRect(0,0,w,h);
+    if(night){ for(let i=0;i<260;i++){const a=.3+seeded(i*5)*.7; g.fillStyle=`rgba(255,255,255,${a})`; g.fillRect(seeded(i)*w,seeded(i*3)*h*.6,1.6,1.6);}
+      const mx=w*.3,my=h*.2, gl=g.createRadialGradient(mx,my,10,mx,my,140); gl.addColorStop(0,'rgba(220,230,255,.55)'); gl.addColorStop(1,'rgba(220,230,255,0)'); g.fillStyle=gl; g.fillRect(mx-150,my-150,300,300);
+      g.fillStyle='#f4f1e4'; g.beginPath(); g.arc(mx,my,40,0,Math.PI*2); g.fill(); g.fillStyle='rgba(180,176,160,.45)'; [[-12,-8,9],[10,6,7],[-4,14,5]].forEach(([dx,dy,r])=>{g.beginPath();g.arc(mx+dx,my+dy,r,0,Math.PI*2);g.fill();}); }
+    else{ g.fillStyle='rgba(255,255,255,.8)'; [[180,150,130],[640,110,170],[880,230,90]].forEach(([x,y,r])=>{g.beginPath();g.ellipse(x,y,r,r*.3,0,0,Math.PI*2);g.fill();}); }
+    g.fillStyle=night?'#1a2440':'#b8c9d4'; g.beginPath(); g.moveTo(0,h*.6); for(let x=0;x<=w;x+=32) g.lineTo(x,h*.57-Math.sin(x/90)*24-Math.sin(x/37)*10); g.lineTo(w,h); g.lineTo(0,h); g.fill();
+    for(let i=0;i<30;i++){const bw=40+seeded(i*3)*70,bx=seeded(i*7)*w,bh=110+seeded(i*11)*300,by=h*.84-bh,sh=150+Math.floor(seeded(i*5)*50);
+      g.fillStyle=night?`rgb(${18+i%4*4},${24+i%3*5},${44+i%5*4})`:`rgb(${sh-20},${sh},${sh+18})`; g.fillRect(bx,by,bw,h-by);
+      for(let yy=by+14;yy<h*.84-10;yy+=22) for(let xx=bx+8;xx<bx+bw-8;xx+=16){ if(night){ if(seeded(xx*7+yy)<.35){g.fillStyle=seeded(xx+yy*3)<.7?'#ffd88a':'#cfe3ff'; g.fillRect(xx,yy,8,10);} } else {g.fillStyle='rgba(235,245,250,.55)'; g.fillRect(xx,yy,8,10);} }}
+    g.fillStyle=night?'#0e1626':'#9fb0a0'; g.fillRect(0,h*.84,w,h*.16);
+    g.fillStyle=night?'#0b1420':'#6f8b6a'; for(let i=0;i<46;i++){const tx=seeded(i*13)*w; g.beginPath(); g.arc(tx,h*.85,18+seeded(i)*16,0,Math.PI*2); g.fill();}
+  });
+}
+
+/* ---------- putting all glassware away (it keeps its contents) ---------- */
+let VHIDE=false;
+function setVesselsHidden(h){
+  VHIDE=h; if(h){ closeDose(); closeSizeMenu&&closeSizeMenu(); if(S.sel){S.sel=null; S.vessels.forEach(x=>x.el.classList.remove('sel')); renderCard();} }
+  [...S.vessels,...S.lamps].forEach(o=>{ if(o.root) o.root.visible=!h; if(o.ringS) o.ringS.visible=false; if(o.ringT) o.ringT.visible=false; });
+  for(const [,L] of LINKS) L.g.visible=!h;
+  labelsEl.classList.toggle('vhide',h); sfx.click(); renderHideBtn();
+}
+function renderHideBtn(){
+  const b=document.getElementById('bHideV'); if(!b) return;
+  b.setAttribute('aria-pressed',String(VHIDE)); b.querySelector('span').textContent=t(VHIDE?'showV':'hideV');
+  const lb=document.getElementById('bLook'); if(lb) lb.querySelector('span').textContent=t('lookRound');
+}
+function bindWorldUI(){
+  const bb=document.querySelector('.benchbtns');
+  if(bb&&!document.getElementById('bHideV')){
+    bb.insertAdjacentHTML('afterbegin','<button type="button" class="bbtn" id="bHideV" aria-pressed="false"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 3h8M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 21L21 3" stroke="currentColor" stroke-width="1.7" class="x"/></svg><span></span></button>');
+    document.getElementById('bHideV').addEventListener('click',()=>setVesselsHidden(!VHIDE));
+  }
+  const nb=document.querySelector('.navbtns');
+  if(nb&&!document.getElementById('bLook')){
+    nb.insertAdjacentHTML('afterbegin','<button type="button" class="bbtn" id="bLook"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18M3 12h18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span></span></button>');
+    document.getElementById('bLook').addEventListener('click',()=>{ if(CAM.view==='look') focusView('table'); else focusView('look'); });
+  }
+  document.head.insertAdjacentHTML('beforeend',`<style>
+.labels.vhide>*:not(.speech){display:none!important}
+#bHideV .x{display:none} #bHideV[aria-pressed="true"] .x{display:inline} #bHideV[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.infocard{position:absolute;left:0;top:0;z-index:45;width:min(320px,calc(100% - 24px));background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;box-shadow:0 12px 32px rgba(20,40,50,.22);font-size:13px;line-height:1.45;color:var(--ink,#1d2a31)}
+.infocard b{display:block;font-size:14.5px;margin-bottom:4px;color:var(--accent)} .infocard p{margin:0 0 8px} .infocard .btn{padding:3px 10px;font-size:12px}
+.speech.scared{background:#fff3f0;border-color:#d4352a}
+@media (max-width:820px){.benchbtns{left:8px;flex-wrap:wrap;justify-content:flex-end}.benchbtns .bbtn{font-size:11.5px;padding:5px 8px}}
+</style>`);
+  renderHideBtn();
+}
+
+/* ---------- the assistant gets a fright when something explodes ---------- */
+function assistantScare(v){
+  if(!AS.g) return;
+  AS.scareT=performance.now()+2600;
+  AS.scareAt=v&&v.root?new T3.Vector3(v.pos.x,0,v.pos.z):new T3.Vector3(0,0,0);
+  const el=document.createElement('div'); el.className='speech scared'; el.innerHTML=`<b>${esc(t('assistantName'))}</b>${esc(t(Math.random()<.5?'scare':'scare2'))}`;
+  if(AS.tipEl) AS.tipEl.remove(); labelsEl.appendChild(el); AS.tipEl=el; AS.tipT=performance.now()+3200;
 }
 
 /* =====================================================================
@@ -4265,6 +4634,7 @@ function buildAssistant(){
   });
   const bridge=box(.2,.04,.04,stdMat('#3a4650'),0,.07,1.0); head.add(bridge);
   const mouth=new T3.Mesh(new T3.TorusGeometry(.14,.03,6,12,Math.PI),stdMat('#b5544b')); mouth.rotation.z=Math.PI; mouth.position.set(0,-.42,.92); head.add(mouth);
+  P.mouth=mouth; const mo=new T3.Mesh(new T3.SphereGeometry(.13,10,8),stdMat('#5a2a26')); mo.scale.set(.8,1.1,.4); mo.position.set(0,-.45,.93); mo.visible=false; head.add(mo); P.mouthO=mo;
   g.traverse(o=>{if(o.isMesh) o.castShadow=true;});
   // tap water for her washing, separate from the tap the user controls
   const st=new T3.Mesh(new T3.CylinderGeometry(.06,.08,1,8),new T3.MeshStandardMaterial({color:c3(200,228,244),transparent:true,opacity:.7,roughness:.05})); st.visible=false; scene.add(st); AS.stream=st;
@@ -4285,7 +4655,16 @@ function assistantFrame(dt){
   const nowS=performance.now()/1000; dt=Math.min(.25,AS.last?nowS-AS.last:0); AS.last=nowS;
   const P=AS.parts, g=AS.g, tn=nowS;
   AS.stream.visible=false; P.beaker.visible=false;
-  if(AS.state==='walk'){
+  if(P.mouthO){P.mouth.visible=true; P.mouthO.visible=false;}
+  if(AS.scareT&&performance.now()<AS.scareT){
+    // startled: a jump, hands up to the face, turned towards the bang, then a nervous look
+    const left=(AS.scareT-performance.now())/2600, k=1-left, d=AS.scareAt.clone().sub(g.position);
+    turnTo(Math.atan2(d.x,d.z),dt*2); poseReset();
+    g.position.y=k<.25?Math.sin(k/.25*Math.PI)*1.4:Math.abs(Math.sin(tn*18))*.08*left;
+    P.armL.rotation.x=-2.5; P.armR.rotation.x=-2.5; P.armL.rotation.z=-.35; P.armR.rotation.z=.35; P.elL.rotation.x=-1.6; P.elR.rotation.x=-1.6;
+    P.head.rotation.x=-.25+Math.sin(tn*9)*.05; P.legL.rotation.x=-.25; P.legR.rotation.x=.15;
+    P.mouth.visible=false; P.mouthO.visible=true;
+  }else if(AS.state==='walk'){
     const d=AS.target.clone().sub(g.position); d.y=0; const L=d.length();
     if(L<.15){ startStop(); if(AS.state==='pass') nextLeg(); }
     else{ const step=Math.min(L,AS.speed*dt); g.position.addScaledVector(d.normalize(),step); turnTo(Math.atan2(d.x,d.z),dt);
