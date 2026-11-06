@@ -2001,7 +2001,7 @@ function renderCard(){
   if(v.gasHist.size) h+=`<div class="grp"><div class="k">${t('gasRel')}</div><div class="pills">${[...v.gasHist].map(g=>pill(GASL[g]+'↑',GASC[g]?rgb(GASC[g],1):null)).join('')}</div></div>`;
   if(v.ind){const tl=ALLTOOLS.find(x=>x.id===v.ind); const ii=indInfo(v.ind,ph); h+=`<div class="grp"><div class="k">${t('ind')}</div><div class="pills">${pill(L(tl.n)+': '+colName(ii?ii.n:'colourless'),ii&&ii.c?rgb(ii.c,1):null)}</div></div>`;}
   h+=`<div class="vact" style="flex-wrap:wrap"><button class="btn primary" id="vHeat">${v.onBurner?t('heatOff'):t('heatOn')}</button><button class="btn" id="vPour">${t('pourBtn')}</button><button class="btn" id="vWash">${t('wash')}</button><button class="btn" id="vRem">${t('remove')}</button></div>`;
-  c.innerHTML=h; if(typeof renderConsole==='function') renderConsole();
+  c.innerHTML=h; if(typeof renderConsole==='function'){ renderConsole(); addCardAside(); }
   c.querySelector('#vPour').onclick=()=>{S.armed=null;S.linkFrom=null;S.pourFrom=v;refreshArm();updateHint();};
   if(v.linkTo||S.vessels.some(o=>o.linkTo===v)){const b=document.createElement('button');b.className='btn';b.textContent=t('unlinkBtn');b.onclick=()=>unlink(v);c.querySelector('.vact').appendChild(b);}
   if(v.thermo){const b=document.createElement('button');b.className='btn';b.textContent=t('thermoOut');b.onclick=()=>toggleThermo(v);c.querySelector('.vact').appendChild(b);}
@@ -4775,11 +4775,12 @@ function bindPanels(){
   try{ if(localStorage.getItem('qrl-reag-min')==='1'){app.classList.add('reag-min'); rb.setAttribute('aria-expanded','false');} }catch(e){}
   const jb=document.createElement('button'); jb.type='button'; jb.className='btn jtog'; jb.id='jTog';
   document.querySelector('#jcard h2').appendChild(jb);
-  jb.addEventListener('click',()=>{const c=document.getElementById('jcard').classList.toggle('collapsed'); renderPanelText(); try{localStorage.setItem('qrl-j-min',c?'1':'0');}catch(e){} });
-  try{ if(localStorage.getItem('qrl-j-min')==='1') document.getElementById('jcard').classList.add('collapsed'); }catch(e){}
+  jb.addEventListener('click',()=>setAside('j',true));
+  bindAside();
 }
 function renderPanelText(){
-  const jb=document.getElementById('jTog'); if(jb) jb.textContent=document.getElementById('jcard').classList.contains('collapsed')?t('expand'):t('collapse');
+  const jb=document.getElementById('jTog'); if(jb){ jb.textContent=t('asideBtn')+' ›'; jb.title=t('asideHint'); }
+  renderAsideTabs();
   const rb=document.getElementById('reagTog'); if(rb) rb.title=t('tLiq');
   const tb=document.getElementById('bTour'); if(tb) tb.querySelector('span').textContent=TOUR.on?t('tourStop'):t('tour');
 }
@@ -4823,6 +4824,76 @@ function layoutVars(){
 window.addEventListener('resize',layoutVars);
 stage.addEventListener('pointerdown',()=>{const c=document.getElementById('camHelp'); if(c) c.classList.add('gone');},{once:true});
 bindPanels(); bindTour(); layoutVars();
+
+/* ---------- the vessel card and the journal can be pushed to the screen edges ----------
+   They slide aside on their own as soon as you start working in the scene (dragging a vessel,
+   pouring, bringing a reagent or turning the camera), and come back from the small tabs */
+const ASIDE={c:false,j:false,jSeen:0,auto:true};
+Object.assign(UI.kz,{asideBtn:'Шетке',asideHint:'Шетке ысыру',cardTab:'Ыдыс ақпараты',journalTab:'Зертхана журналы',autoAside:'Тәжірибе кезінде өздігінен шетке ысыру'});
+Object.assign(UI.en,{asideBtn:'Aside',asideHint:'Push to the edge',cardTab:'Vessel info',journalTab:'Lab journal',autoAside:'Push aside automatically during experiments'});
+function jCount(){ return S.journal?S.journal.length:0; }
+function setAside(which,on){
+  if(ASIDE[which]===on) return; ASIDE[which]=on;
+  if(which==='j'&&on) ASIDE.jSeen=jCount();
+  document.getElementById(which==='c'?'vcard':'jcard').classList.toggle('aside',on);
+  renderAsideTabs();
+}
+function renderAsideTabs(){
+  const ct=document.getElementById('cardTab'), jt=document.getElementById('journalTab'); if(!ct||!jt) return;
+  const v=S.sel&&S.vessels.includes(S.sel)?S.sel:null;
+  ct.hidden=!ASIDE.c||!v; jt.hidden=!ASIDE.j;
+  ct.querySelector('span').textContent=v?vname(v):t('cardTab');
+  const n=Math.max(0,jCount()-ASIDE.jSeen);
+  jt.querySelector('span').textContent=t('journalTab'); const b=jt.querySelector('.badge'); b.textContent=n; b.hidden=!n;
+  ct.setAttribute('aria-label',t('cardTab')); jt.setAttribute('aria-label',t('journalTab')+(n?` (${n})`:''));
+}
+function vname(v){ return vName(v); }
+function addCardAside(){
+  const c=document.getElementById('vcard'); if(!c||c.querySelector('#cAside')||!S.sel) return;
+  c.insertAdjacentHTML('afterbegin',`<button type="button" class="btn asidebtn" id="cAside" title="${esc(t('asideHint'))}">‹ ${esc(t('asideBtn'))}</button>`);
+  c.querySelector('#cAside').addEventListener('click',()=>setAside('c',true));
+}
+function bindAside(){
+  const foot=document.querySelector('.foot');
+  foot.insertAdjacentHTML('beforeend',
+    `<button type="button" class="sidetab left" id="cardTab" hidden><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span></button>`+
+    `<button type="button" class="sidetab right" id="journalTab" hidden><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span><b class="badge" hidden></b></button>`);
+  document.getElementById('cardTab').addEventListener('click',()=>setAside('c',false));
+  document.getElementById('journalTab').addEventListener('click',()=>setAside('j',false));
+  // new journal lines while it is aside show up as a count on its tab
+  new MutationObserver(()=>{ if(ASIDE.j) renderAsideTabs(); }).observe(document.getElementById('journal'),{childList:true});
+  // working in the scene pushes both panels aside (only where they float over the 3D view)
+  let st=null;
+  window.addEventListener('pointerdown',e=>{
+    const tg=e.target; st=null;
+    if(!matchMedia('(min-width:821px)').matches||CAM.outside) return;
+    if(tg.closest&&(tg.closest('#stage3d')||tg.closest('#labels .obj')||tg.closest('[data-pid]')||tg.closest('.ritem'))) st={x:e.clientX,y:e.clientY};
+  },true);
+  window.addEventListener('pointermove',e=>{
+    if(!st||!ASIDE.auto) return;
+    if(Math.hypot(e.clientX-st.x,e.clientY-st.y)>12){ st=null; setAside('c',true); setAside('j',true); }
+  },true);
+  window.addEventListener('pointerup',()=>{st=null;},true);
+  // a vessel card button to push it aside by hand
+  setInterval(renderAsideTabs,400); addCardAside();
+  document.head.insertAdjacentHTML('beforeend',`<style>
+.sidetab,.asidebtn{display:none}
+@media (min-width:821px){
+  .foot .card{transition:transform .38s cubic-bezier(.16,1,.3,1),opacity .3s}
+  #vcard.aside{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+  #jcard.aside{transform:translateX(calc(100% + 24px));opacity:0;pointer-events:none}
+  .asidebtn{display:inline-block;float:right;margin:-2px 0 4px 8px;padding:2px 9px;font-size:12px}
+  .sidetab{position:absolute;bottom:0;display:inline-flex;align-items:center;gap:6px;max-width:260px;padding:8px 12px;border-radius:12px;border:1px solid var(--glass-edge,#d5dde2);background:var(--glass,#fff);box-shadow:var(--lift);font:inherit;font-size:13px;font-weight:600;color:var(--fg,#1d2a31);cursor:pointer;pointer-events:auto;animation:tabIn .35s cubic-bezier(.16,1,.3,1)}
+  .sidetab[hidden]{display:none}
+  .sidetab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sidetab.left{left:0} .sidetab.right{right:0}
+  .sidetab:hover{border-color:var(--accent);color:var(--accent)}
+  .sidetab .badge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;line-height:20px;text-align:center}
+  @keyframes tabIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+}
+@media (prefers-reduced-motion:reduce){.foot .card{transition:none}.sidetab{animation:none}}
+</style>`);
+}
 
 function backdropText(){const n=document.getElementById('camHelp'); if(n) n.textContent=t('camHelp'); renderLightBtn(); renderSoundBtn(); renderNav(); if(typeof renderPanelText==='function'){renderPanelText(); renderConsole();}}
 document.getElementById('bBack').addEventListener('click',()=>focusView('table'));

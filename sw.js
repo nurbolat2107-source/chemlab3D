@@ -1,6 +1,6 @@
 // Service worker: keeps the lab working offline after the first visit.
 // Bump VERSION whenever the files change so phones pick up the new copy.
-const VERSION='chemlab-v9';
+const VERSION='chemlab-v10';
 const FILES=['./','index.html','lab2d.html','three.min.js','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
